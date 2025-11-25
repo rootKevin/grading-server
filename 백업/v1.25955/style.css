@@ -1,0 +1,84 @@
+/* ────────────────────────────────
+   v1.2584 (반응형 — PC/태블릿/모바일 크기 조절)
+   ──────────────────────────────── */
+
+/* 기본 PC 크기 — 현 상태 유지 */
+.page-btn {
+  background: #e8f0fe;
+  border: none;
+  padding: 8px 14px;
+  margin-right: 3px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.page-btn:hover {
+  background: #2a5adf;
+  color: white;
+}
+
+/* v1.2590 수정안 — 쪽 버튼 전체 중앙 정렬, 행 유지 */
+#chapter-container {
+  display: flex;
+  justify-content: center;  /* 전체 중앙 배치 */
+}
+
+.chapter-inner {
+  display: flex;
+  flex-direction: column;   /* 행 단위 배치 유지 */
+  gap: 10px;
+  align-items: flex-start;  /* 행 내부 좌측 정렬 */
+}
+
+.page-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* ===========================
+   📱 반응형 구간
+   =========================== */
+
+/* 💻 PC 기준: width > 1024px → 기본 유지 */
+
+/* 📱 태블릿: 768px ~ 1024px */
+@media (max-width: 1024px) {
+  body {
+    font-size: 0.9em; /* 살짝 축소 */
+  }
+  .page-btn {
+    font-size: 10px;      /* 70% 수준 */
+    padding: 5px 10px;    /* 여백 축소 */
+    margin-right: 2px;
+    border-radius: 6px;
+    min-width: 60px;      /* 균등 폭 유지 */
+  }
+  h1 {
+    font-size: 18px;
+  }
+}
+
+/* 📱 모바일: 0 ~ 767px */
+@media (max-width: 767px) {
+  body {
+    font-size: 0.8em; /* 전체 폰트 약 50% */
+    padding: 15px;
+  }
+  .container {
+    padding: 20px;
+  }
+  .page-btn {
+    font-size: 8px;       /* 50% 수준 */
+    padding: 4px 8px;
+    margin-right: 1px;
+    border-radius: 5px;
+    min-width: 50px;
+  }
+  h1 {
+    font-size: 16px;
+  }
+}

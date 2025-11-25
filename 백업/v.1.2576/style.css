@@ -1,0 +1,53 @@
+body {
+  font-family: "Pretendard", sans-serif;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 30px;
+}
+
+.container {
+  max-width: 950px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 25px 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.chapter-section {
+  margin-bottom: 30px;
+}
+
+.chapter-section h2 {
+  color: #2a5adf;
+  font-size: 20px;
+  margin-bottom: 10px;
+  border-left: 6px solid #2a5adf;
+  padding-left: 8px;
+}
+
+.page-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-btn {
+  background: #e8f0fe;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.page-btn:hover {
+  background: #2a5adf;
+  color: white;
+}

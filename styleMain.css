@@ -1,0 +1,135 @@
+ /* 메인 채점 페이지 전체 가운데 정렬 */
+    .container {display: flex;flex-direction: column;align-items: center;}      /* ✅ 전체를 가운데 배치 */
+        #question-container {display: flex;flex-direction: column;
+      align-items: flex-start;  /* ✅ 카드 내부는 좌측 정렬 유지 */
+      width: 100%;max-width: 950px;}         /* ✅ 너무 넓지 않게 제한 */
+    /* 한 문항의 전체 줄 레이아웃 */
+    .question-line {
+      display: grid;
+      grid-template-columns: 60px 1fr 100px 100px; /* 번호 | 입력칸 | 버튼 | 결과 */
+      align-items: center;
+      gap: 10px;
+    }
+    /* 문항 번호 */
+    .question-line h3 {
+      text-align: right;
+      color: #2a5adf;
+      font-weight: 600;
+      font-size: 14px;
+      margin: 0;
+    }
+    /* 각 문항 카드 */
+    .question-card {width: 100%;background: #f8f9ff;border: 1px solid #dde2f2;border-radius: 10px;padding: 5px 7px;margin-bottom: 10px;box-sizing: border-box;}
+    .question-card h3{margin:0;font-size:14px;color:#2a5adf;font-weight:600;width:55px;text-align:right}
+    .dual-inputs,.multi-inputs,.var-inputs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .dual-inputs label,.multi-inputs label,.var-inputs label, .sub-input label{font-size:13px;font-weight:600;color:#333}
+    .dual-inputs input,.multi-inputs input,.var-inputs input, .sub-input input, .formula-input input{width:120px;padding:4px;font-size:13px;border:1px solid #ccc;border-radius:5px}
+    .var-inputs label { margin-right: 11px;}
+    .answer-input, .multi-inputs input { margin-left: 22px;}
+    .answer-input.disabled{background:#eee;color:#666;border:1px solid #ccc;cursor:not-allowed}
+    .choices label { margin-left: 20px;}
+  /* 채점 버튼 */
+.check-btn {
+  justify-self: end;             /* ✅ 항상 오른쪽 끝으로 정렬 */
+  background: #2a5adf;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+    .check-btn.correct{background:#e4f9ec;color:#0b7a32;border:1.5px solid #1a8f4c}
+    .check-btn.wrong{background:#ffe9e9;color:#c81c1c;border:1.5px solid #d93025}
+/* 결과 표시 */
+.result-inline {
+  text-align: left;
+  font-size: 13px;
+  font-weight: bold;
+  min-width: 80px;
+}
+    .bottom-buttons{text-align:center;margin-top:20px}
+    #check-all{  background: #5eff8b59;          /* ✅ 초록색 계열 */
+  color: rgb(39, 168, 0);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;}
+    #check-all:hover{background:#222}
+    .matrix-input {display: inline-block;border: 1px solid #ccc;padding: 6px;border-radius: 8px;background: #fafafa;}
+    .matrix-row {display: flex;gap: 6px;margin-bottom: 4px;justify-content: center;}
+    .matrix-cell {width: 45px;text-align: center;padding: 3px;font-size: 13px;}
+    /* 수식 입력칸과 미리보기 균형 */
+/* 입력칸 영역 */
+.formula-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.formula-input input[type="text"],
+.math-preview {
+  height: 32px;              /* ✅ 동일한 높이 */
+  line-height: 32px;         /* ✅ 텍스트 수직 중앙 정렬 */
+  box-sizing: border-box;
+}
+    
+/* v1.2593 (math-preview 시각 구분 강화 — 입력칸과 구분 명확화) */
+
+/* 미리보기 칸 시각 강조 */
+.math-preview {
+  border: 1.5px solid #cbd3ff;     /* ✅ 살짝 진한 파랑 테두리 */
+  background: #f4f6ff;             /* ✅ 은은한 파란빛 배경 */
+  color: #1a2a7a;                  /* ✅ 진한 파랑 텍스트 */
+  font-size: 8px;
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 32px;
+  line-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* ✅ 살짝 그림자 */
+  transition: 0.2s ease;
+}
+
+/* 미리보기 활성 시(내용 있을 때) 색 살짝 진하게 */
+.math-preview:not(:empty) {
+  background: #eaf0ff;             /* ✅ 입력 시 더 명확히 구분 */
+  border-color: #9bb0ff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+    /* v1.2586 추가 — 네비게이션 버튼 */
+    .nav-group {display: flex;justify-content: center;gap: 10px;flex-wrap: wrap;margin-top: 6px;}
+    .nav-btn, .back-btn {background: #f1f3ff;color: #2a5adf;border: 1.5px solid #cbd3ff;padding: 7px 14px;border-radius: 8px;cursor: pointer;font-weight: 600;font-size: 13px;transition: 0.2s;}
+    .nav-btn:hover, .back-btn:hover {background: #e2e7ff;}
+    /* v1.2595 (소문항 라벨+입력칸 묶음 — 줄바꿈 시 함께 이동) */
+
+/* 각 소문항 단위를 한 블록으로 취급 */
+.sub-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
+  flex-wrap: nowrap;
+}
+
+
+/* 여러 소문항이 있을 때 전체를 감싸는 영역 */
+.sub-group {
+  display: flex;
+  flex-wrap: wrap;   /* ✅ 소문항 단위로 줄바꿈 */
+  align-items: center;
+  gap: 6px;
+}

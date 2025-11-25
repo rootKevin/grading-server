@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v1.2569 (문자수식형 채점 기능 추가 — 기존 기능 전부 유지) -->
+  <!-- v1.2567 (기본 변수대입형 복원 + 방정식 계열 완전 통합) -->
+  <!-- v1.2566 (방정식(n개): '또는' 해 분리 + 추가칸 정답 자동추출, 자유 문자열 대응) -->
+  <!-- v1.2565 (방정식: '또는' 파싱 수정) -->
+  <!-- v1.2564 (방정식(n개): 추가칸도 채점 포함, '실근/허근'까지 멀티셋 비교) -->
+  <!-- v1.2562 (방정식(n개): 등호개수+n칸 생성, 마지막 n칸 라벨·placeholder 없음, 기존 v1.2561 기능 유지) -->
+  <!-- v1.2561 (입력칸 5개 이상 small-input 적용) -->
+  <!-- v1.255 (변수대입형(연립방정식) 멀티셋 비교) -->
+  <!-- v1.254 (변수대입형(방정식) 순서무관 비교) -->
+  <!-- v1.253 (변수대입형 라벨+다중입력 추가, 기존 기능 유지) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채점 페이지</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .question-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .question-card{background:#f8f9ff;border:1px solid #dde2f2;border-radius:10px;padding:8px 12px;margin-bottom:8px}
+    .question-card h3{margin:0;font-size:14px;color:#2a5adf;font-weight:600;width:55px;text-align:right}
+    .dual-inputs,.multi-inputs,.var-inputs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .dual-inputs label,.multi-inputs label,.var-inputs label{font-size:13px;font-weight:600;color:#333}
+    .dual-inputs input,.multi-inputs input,.var-inputs input{width:90px;padding:4px;font-size:13px;border:1px solid #ccc;border-radius:5px}
+    .multi-inputs input.small-input,.var-inputs input.small-input{width:45px;font-size:12px}
+    .answer-input.disabled{background:#eee;color:#666;border:1px solid #ccc;cursor:not-allowed}
+    .check-btn{background:#2a5adf;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:600}
+    .check-btn.correct{background:#e4f9ec;color:#0b7a32;border:1.5px solid #1a8f4c}
+    .check-btn.wrong{background:#ffe9e9;color:#c81c1c;border:1.5px solid #d93025}
+    .result-inline{font-weight:bold;white-space:nowrap;min-width:90px;text-align:right;margin-left:8px;font-size:13px}
+    .bottom-buttons{text-align:center;margin-top:20px}
+    #check-all{background:#444;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer}
+    #check-all:hover{background:#222}
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 id="page-title">📘 채점 페이지</h1>
+    <div id="question-container">데이터를 불러오는 중입니다...</div>
+    <div class="bottom-buttons">
+      <button id="check-all">🧮 모두 채점</button><br />
+      <button onclick="window.location.href='index.html'" class="back-btn">⬅ 쪽 선택으로 돌아가기</button>
+    </div>
+  </div>
+
+<script>
+const API_URL="https://script.google.com/macros/s/AKfycbwvdVkZm4EVUVeHaelSzQPrtFmOA2bB3A7HFMHEIbb42SbDFfNusYrsLyFbNakLmlMzcQ/exec";
+
+/* 공통 정규화 */
+function normalize(s){
+  return (s||"")
+    .replace(/root/gi,"√").replace(/루트/g,"√")
+    .replace(/−/g,"-").replace(/×/g,"*").replace(/\*/g,"")
+    .replace(/\s*또는\s*(?=[a-zA-Z가-힣]+\s*=)/g, ",")
+    .replace(/，/g, ",")
+    .replace(/\s*,\s*/g, ",")
+    .replace(/\s+/g,"")
+    .replace(/,$/,"").replace(/^,/,"")
+    .trim();
+}
+
+/* 변수 대입형 기본 파서 ("키=값" 나열) */
+function parseKeyValuePairs(text){
+  const pairs=[...String(text).matchAll(/([a-zA-Z가-힣]+)\s*=\s*([^,]+)/g)];
+  return pairs.map(([,key,val])=>[key.trim(),normalize(val)]);
+}
+
+/* 특수 key:value 쌍 채점 */
+function gradeSpecialPair(correct,user1,user2,key1,key2){
+  const norm=normalize;
+  const parts=Object.fromEntries(
+    correct.replace(/\s+/g,"").split(",").map(p=>p.split(":").map(x=>norm(x)))
+  );
+  return parts[key1]&&parts[key2]&&norm(parts[key1])===norm(user1)&&norm(parts[key2])===norm(user2);
+}
+
+/* 연립방정식 멀티셋 비교 */
+function gradeSystemEquationAsMultiset(correct, inputs){
+  const norm=normalize;
+  const corrValues=[...correct.matchAll(/=\s*([^,}]+)/g)].map(m=>norm(m[1]));
+  const userValues=inputs.map(v=>norm(v));
+  if(userValues.length!==corrValues.length) return false;
+  return [...userValues].sort().join(",") === [...corrValues].sort().join(",");
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+  const page=new URLSearchParams(window.location.search).get("page");
+  const title=document.getElementById("page-title");
+  const container=document.getElementById("question-container");
+  if(!page){container.innerHTML="<p>❌ 잘못된 접근입니다.</p>";return;}
+  title.textContent=`📘 ${page}쪽 채점`;
+
+  try{
+    const res=await fetch(API_URL);
+    const data=await res.json();
+    const filtered=Object.entries(data).filter(([_,q])=>q.page==page).map(([id,q])=>({id,...q}));
+    if(filtered.length===0){container.innerHTML="<p>❌ 해당 쪽의 문항이 없습니다.</p>";return;}
+
+    container.innerHTML=filtered.map(q=>{
+      const type=(q.type||"").trim();
+      const ans =(q.ans ||"").trim();
+      let inputHTML="";
+
+      /* ① 기본 변수 대입형 */
+      if(type==="변수 대입형"){
+        const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const isMany=labels.length>=5?"small-input":"";
+        inputHTML=`<div class="var-inputs">${
+          labels.map(l=>`<label>${l}</label><input type="text" class="var-basic ${isMany}" data-key="${l}" />`).join("")
+        }</div>`;
+      }
+      /* ② 변수 대입형(연립방정식) */
+      else if(type==="변수 대입형(연립방정식)"){
+        const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const isMany=labels.length>=5?"small-input":"";
+        inputHTML=`<div class="var-inputs">${
+          labels.map(l=>`<label>${l}</label><input type="text" class="var-system ${isMany}" data-key="${l}" />`).join("")
+        }</div>`;
+      }
+      /* ③ 변수 대입형(방정식)(n개) */
+      else if(/^변수\s*대입형\(방정식\)\(\d+개\)$/.test(type)){
+        const n=parseInt(type.match(/\((\d+)개\)/)[1]);
+        const baseLabels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const total=baseLabels.length + n;
+        const isMany=total>=5?"small-input":"";
+        inputHTML=`<div class="var-inputs">` +
+          baseLabels.map(v=>`<label>${v}</label><input type="text" class="var-eq ${isMany}" data-key="${v}" />`).join("") +
+          Array.from({length:n}).map(()=>`<input type="text" class="extra-eq ${isMany}" />`).join("") +
+          `</div>`;
+      }
+      /* ④ 변수 대입형(방정식) */
+      else if(type==="변수 대입형(방정식)"){
+        const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const isMany=labels.length>=5?"small-input":"";
+        inputHTML=`<div class="var-inputs">${
+          labels.map(l=>`<label>${l}</label><input type="text" class="var-eq ${isMany}" data-key="${l}" />`).join("")
+        }</div>`;
+      }
+      /* ⑤ 문자수식형 (새 기능) */
+      else if(type==="문자수식"){
+        inputHTML=`<input type="text" class="answer-input" placeholder="문자식 답을 입력하세요" />`;
+      }
+      /* ⑤ 소문항형 */
+      else if(/\(\d+\)|\([가-사]\)/.test(ans)){
+        const tokens=ans.match(/\((\d+|[가-사])\)/g)||[];
+        const isMany=tokens.length>=5?"small-input":"";
+        inputHTML=`<div class="multi-inputs">${
+          tokens.map((t,i)=>`<label>${t}</label><input type="text" class="subans ${isMany}" data-index="${i}" />`).join("")
+        }</div>`;
+      }
+      /* ⑥ 객관식 / 복수형 */
+      else if(type==="객관식"){
+        const opts=["①","②","③","④","⑤"];
+        inputHTML=`<div class="choices">${
+          opts.map(o=>`<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`).join("")
+        }</div>`;
+      }
+      else if(type==="객관식(복수형)"){
+        const opts=["①","②","③","④","⑤"];
+        inputHTML=`<div class="choices">${
+          opts.map(o=>`<label><input type="checkbox" name="${q.id}" value="${o}">${o}</label>`).join("")
+        }</div>`;
+      }
+      /* ⑦ 단답형 / 특수형 / 등식형 */
+      else if(type==="등식형"){
+        inputHTML=`<input type="text" class="answer-input" placeholder="정답을 입력하세요" />`;
+      }
+      else if(/몫\s*:|나머지\s*:/.test(ans)){
+        inputHTML=`<div class="dual-inputs"><label>몫</label><input type="text" class="ans1" />
+          <label>나머지</label><input type="text" class="ans2" /></div>`;
+      }else if(/실수부분\s*:|허수부분\s*:/.test(ans)){
+        inputHTML=`<div class="dual-inputs"><label>실수부분</label><input type="text" class="ans1" />
+          <label>허수부분</label><input type="text" class="ans2" /></div>`;
+      }else if(/최댓값\s*:|최솟값\s*:/.test(ans)){
+        inputHTML=`<div class="dual-inputs"><label>최댓값</label><input type="text" class="ans1" />
+          <label>최솟값</label><input type="text" class="ans2" /></div>`;
+      }
+      else{
+        inputHTML=`<input type="text" class="answer-input disabled" value="채점 불가능 유형" disabled />`;
+      }
+
+
+      const canGrade = (
+        /^변수\s*대입형/.test(type) || type==="등식형" || type==="문자수식" ||
+        type==="객관식" || type==="객관식(복수형)" ||
+        /몫\s*:|나머지\s*:/.test(ans) || /실수부분\s*:|허수부분\s*:/.test(ans) ||
+        /최댓값\s*:|최솟값\s*:/.test(ans) || /\(\d+\)|\([가-사]\)/.test(ans)
+      );
+
+      return `
+        <div class="question-card" data-id="${q.id}">
+          <div class="question-line">
+            <h3>${q.id.replace("q","")}</h3>
+            ${inputHTML}
+            <button class="check-btn"${canGrade?"":" disabled"}>채점</button>
+            <span class="result-inline"></span>
+          </div>
+          <input type="hidden" class="correct-answer" value="${ans}" />
+          <input type="hidden" class="answer-type" value="${type}" />
+        </div>`;
+    }).join("");
+
+    /* ===== 채점 로직 ===== */
+    function gradeQuestion(card){
+      const btn=card.querySelector(".check-btn");
+      const result=card.querySelector(".result-inline");
+      const correct=card.querySelector(".correct-answer").value.trim();
+      const type=card.querySelector(".answer-type").value.trim();
+      const norm=normalize;
+
+      /* 기본 변수 대입형 */
+      if(type==="변수 대입형"){
+        const expected = Object.fromEntries(parseKeyValuePairs(correct));
+        const user = Object.fromEntries(
+          [...card.querySelectorAll(".var-basic")].map(i=>[i.dataset.key, norm(i.value)])
+        );
+        const sameKeys = Object.keys(expected).length===Object.keys(user).length &&
+                         Object.keys(expected).every(k=>user.hasOwnProperty(k));
+        if(!sameKeys) return fail();
+        const ok = Object.entries(expected).every(([k,v])=>user[k]===v);
+        return ok ? pass() : fail();
+      }
+
+      /* 방정식(n개) */
+      if(/^변수\s*대입형\(방정식\)\(\d+개\)$/.test(type)){
+        const n=parseInt(type.match(/\((\d+)개\)/)[1]);
+        const varVals=[...card.querySelectorAll(".var-eq")].map(i=>norm(i.value));
+        const extraVals=[...card.querySelectorAll(".extra-eq")].map(i=>norm(i.value));
+
+        const corrVals = correct
+          .replace(/\s*또는\s*/g, ",")
+          .match(/=\s*([^,]+)/g)
+          ?.map(x => x.replace(/^=\s*/, ""))
+          .map(norm) || [];
+
+        const afterEqPart = correct.split(/[^,]+=.+?(?:,|$)/).pop() || "";
+        const corrExtras = afterEqPart.split(",").map(norm).filter(Boolean);
+
+        const expected = [...corrVals, ...corrExtras];
+        const user=[...varVals,...extraVals];
+        if(user.length!==expected.length) return fail();
+        return [...user].sort().join(",") === [...expected].sort().join(",") ? pass() : fail();
+      }
+
+      if(type==="변수 대입형(방정식)"){
+        const inputs=[...card.querySelectorAll(".var-eq")].map(i=>norm(i.value));
+
+        const corr = correct
+          .replace(/\s*또는\s*/g, ",")        // '또는'을 쉼표로 통일
+          .match(/=\s*([^,]+)/g)              // = 뒤의 해만 추출
+          ?.map(x => x.replace(/^=\s*/, ""))  // '=' 제거
+          .map(norm) || [];
+
+        if(inputs.length!==corr.length) return fail();
+        return ([...inputs].sort().join(",") === [...corr].sort().join(",")) ? pass() : fail();
+      }
+      if(type==="변수 대입형(연립방정식)"){
+        const inputs=[...card.querySelectorAll(".var-system")].map(i=>i.value);
+        return gradeSystemEquationAsMultiset(correct,inputs)?pass():fail();
+      }
+
+      const subInputs=card.querySelectorAll(".subans");
+      if(subInputs.length>0){
+        const correctParts=correct.replace(/\)\s*/g,") ")
+          .split(/\(\d+\)|\([가-사]\)/)
+          .map(x=>norm(x.replace(/^\)|\)$/g,""))).filter(Boolean);
+        const userParts=[...subInputs].map(i=>norm(i.value));
+        if(correctParts.length!==userParts.length) return fail();
+        return correctParts.every((c,i)=>c===userParts[i])?pass():fail();
+      }
+
+      if(type==="객관식"){
+        const sel=card.querySelector("input[type=radio]:checked")?.value;
+        return (sel===correct)?pass():fail();
+      }
+      if(type==="객관식(복수형)"){
+        const chk=[...card.querySelectorAll("input[type=checkbox]:checked")].map(i=>i.value).join("");
+        return (chk===correct)?pass():fail();
+      }
+      /* 문자수식형 — 기호 정규화 후 문자열 비교 */
+      if(type==="문자수식"){
+        const user=norm(card.querySelector(".answer-input")?.value.trim()||"");
+        const corr=norm(correct);
+        return (user===corr)?pass():fail();
+      }
+      const ans1=card.querySelector(".ans1")?.value.trim()||"";
+      const ans2=card.querySelector(".ans2")?.value.trim()||"";
+      if(/몫\s*:|나머지\s*:/.test(correct))
+        return gradeSpecialPair(correct,ans1,ans2,"몫","나머지")?pass():fail();
+      if(/실수부분\s*:|허수부분\s*:/.test(correct))
+        return gradeSpecialPair(correct,ans1,ans2,"실수부분","허수부분")?pass():fail();
+      if(/최댓값\s*:|최솟값\s*:/.test(correct))
+        return gradeSpecialPair(correct,ans1,ans2,"최댓값","최솟값")?pass():fail();
+
+      if(type==="등식형"){
+        const user=norm(card.querySelector(".answer-input")?.value.trim()||"");
+        return (user===norm(correct))?pass():fail();
+      }
+
+      result.textContent="채점 불가능";
+      result.className="result-inline";
+      return;
+
+      function pass(){result.textContent="✅ 정답!";result.classList.add("correct");btn.classList.add("correct");btn.textContent="O";disableAll();}
+      function fail(){result.textContent="❌ 오답..";result.classList.add("wrong");btn.classList.add("wrong");btn.textContent="X";disableAll();}
+      function disableAll(){btn.disabled=true;card.classList.add("graded");card.querySelectorAll("input").forEach(i=>i.disabled=true);}
+    }
+
+    document.querySelectorAll(".check-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>gradeQuestion(btn.closest(".question-card")));
+    });
+    document.getElementById("check-all").addEventListener("click",()=>{
+      document.querySelectorAll(".question-card").forEach(card=>{
+        const btn=card.querySelector(".check-btn");
+        if(btn && !btn.disabled) gradeQuestion(card);
+      });
+    });
+
+  }catch(err){
+    container.innerHTML="<p style='color:red;'>데이터를 불러오지 못했습니다.</p>";
+  }
+});
+</script>
+</body>
+</html>

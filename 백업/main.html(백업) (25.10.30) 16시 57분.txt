@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채점 페이지</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- ✅ MathJax -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+  <style>
+/* ====== 기본 레이아웃 ====== */
+.question-line {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .question-line { flex-direction: column; align-items: flex-start; }
+}
+
+/* ====== 카드 ====== */
+.question-card {
+  background: #f8f9ff;
+  border: 1px solid #dde2f2;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.question-card.graded { background: #f1f1f1; border-color: #ccc; }
+.question-card h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #2a5adf;
+  font-weight: 600;
+  width: 60px;
+  text-align: right;
+}
+
+/* ====== 입력칸 ====== */
+.answer-input {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 500px;
+  padding: 8px 10px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  height: 40px;
+  box-sizing: border-box;
+}
+.answer-input:disabled { background: #eee; color: #777; }
+
+/* ====== 객관식 ====== */
+.choices {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1 1 60%;
+  max-width: 60%;
+  height: 40px;
+  gap: 5px;
+}
+.choices label:hover { background: #dce8ff; }
+.choices input:checked + label {
+  background: #2a5adf; color: white; font-weight: 600;
+  box-shadow: inset 0 0 0 2px #173aaf;
+}
+.choices input:disabled + label {
+  opacity: 0.6; cursor: not-allowed; background: #d9d9d9; color: #020202;
+}
+
+/* ====== 수식 입력 ====== */
+.symbol-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.symbol-btn {
+  background: #e9efff;
+  border: 1px solid #cddcff;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #1f47b5;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.symbol-btn:hover {
+  background: #dce8ff;
+  border-color: #9fb8ff;
+  transform: translateY(-1px);
+}
+.symbol-btn:active {
+  transform: translateY(0);
+  background: #cddcff;
+  border-color: #809bff;
+}
+
+/* ====== 수식 미리보기 ====== */
+.formula-preview {
+  margin-top: 6px;
+  font-size: 16px;
+  color: #333;
+  min-height: 22px;
+  padding-left: 3px;
+}
+
+/* ====== 채점 버튼 ====== */
+.check-btn {
+  background: #2a5adf;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+  transition: all 0.25s ease;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+.check-btn.correct {
+  background: #e4f9ec; color: #0b7a32; border: 1.5px solid #1a8f4c;
+}
+.check-btn.wrong {
+  background: #ffe9e9; color: #c81c1c; border: 1.5px solid #d93025;
+}
+
+/* ====== 결과 ====== */
+.result-inline {
+  font-weight: bold;
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: right;
+  margin-left: 10px;
+}
+.correct { color: #1a8f4c; }
+.wrong { color: #d93025; }
+
+/* ====== 하단 버튼 ====== */
+.bottom-buttons { text-align: center; margin-top: 25px; }
+#check-all {
+  background: #444; color: white; border: none;
+  padding: 10px 18px; border-radius: 8px;
+  font-size: 15px; cursor: pointer;
+}
+#check-all:hover { background: #222; }
+.back-btn {
+  background-color: #3cb371;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 15px;
+}
+.back-btn:hover { background-color: #2e8b57; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="page-title">📘 채점 페이지</h1>
+    <div id="question-container">데이터를 불러오는 중입니다...</div>
+
+    <div class="bottom-buttons">
+      <button id="check-all">🧮 모두 채점</button><br />
+      <button onclick="window.location.href='index.html'" class="back-btn">⬅ 쪽 선택으로 돌아가기</button>
+    </div>
+  </div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwvdVkZm4EVUVeHaelSzQPrtFmOA2bB3A7HFMHEIbb42SbDFfNusYrsLyFbNakLmlMzcQ/exec";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const page = new URLSearchParams(window.location.search).get("page");
+  const title = document.getElementById("page-title");
+  const container = document.getElementById("question-container");
+
+  if (!page) { container.innerHTML = "<p>❌ 잘못된 접근입니다.</p>"; return; }
+  title.textContent = `📘 ${page}쪽 채점`;
+
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    const filtered = Object.entries(data).filter(([_, q]) => q.page == page).map(([id, q]) => ({ id, ...q }));
+    if (filtered.length === 0) { container.innerHTML = "<p>❌ 해당 쪽의 문항이 없습니다.</p>"; return; }
+
+    container.innerHTML = filtered.map(q => {
+      const type = q.type?.trim() || "";
+      let inputHTML = "";
+
+      if (type === "객관식") {
+        const options = ["①", "②", "③", "④", "⑤"];
+        inputHTML = `<div class="choices">${options.map(opt => `<label><input type="radio" name="${q.id}" value="${opt}">${opt}</label>`).join("")}</div>`;
+      }
+      else if (type === "객관식(복수형)") {
+        const options = ["①", "②", "③", "④", "⑤"];
+        inputHTML = `<div class="choices">${options.map(opt => `<label><input type="checkbox" name="${q.id}" value="${opt}">${opt}</label>`).join("")}</div>`;
+      }
+      else if (type === "단답형(정수)") {
+        inputHTML = `<input type="number" class="answer-input" placeholder="정답을 입력하세요" />`;
+      }
+      else if (type === "단답형(한글문자)") {
+        inputHTML = `<input type="text" class="answer-input" placeholder="정답을 입력하세요 예) ㄱ, ㄴ" />`;
+      }
+      else if (type === "단답형(문자수식)") {
+        inputHTML = `
+          <div class="formula-container">
+            <input type="text" class="answer-input formula-input" placeholder="예) √2, x^2, π 등 입력" />
+            <div class="symbol-buttons">
+              <button class="symbol-btn" data-symbol="√">√</button>
+              <button class="symbol-btn" data-symbol="π">π</button>
+              <button class="symbol-btn" data-symbol="α">α</button>
+              <button class="symbol-btn" data-symbol="β">β</button>
+              <button class="symbol-btn" data-symbol="γ">γ</button>
+              <button class="symbol-btn" data-symbol="δ">δ</button>
+              <button class="symbol-btn" data-symbol="±">±</button>
+              <button class="symbol-btn" data-symbol="≠">≠</button>
+              <button class="symbol-btn" data-symbol="≤">≤</button>
+              <button class="symbol-btn" data-symbol="≥">≥</button>
+            </div>
+            <div class="formula-preview">(수식 미리보기)</div>
+          </div>`;
+      }
+      else {
+        inputHTML = `<input type="text" class="answer-input" value="현재 버전에서는 지원하지 않습니다" disabled style="color:#d93025;font-weight:600;" />`;
+      }
+
+      return `
+        <div class="question-card" data-id="${q.id}">
+          <div class="question-line">
+            <h3>${q.id.replace("q","")}번</h3>
+            ${inputHTML}
+            <button class="check-btn">채점</button>
+            <span class="result-inline"></span>
+          </div>
+          <input type="hidden" class="correct-answer" value="${q.ans}" />
+          <input type="hidden" class="answer-type" value="${type}" />
+        </div>`;
+    }).join("");
+
+    /* ✅ 특수기호 삽입 */
+    document.body.addEventListener("click", e => {
+      if (!e.target.classList.contains("symbol-btn")) return;
+      const btn = e.target;
+      const input = btn.closest(".formula-container").querySelector(".answer-input");
+      const symbol = btn.getAttribute("data-symbol");
+      if (symbol && input && !input.disabled) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const val = input.value;
+        input.value = val.slice(0, start) + symbol + val.slice(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + symbol.length;
+      }
+    });
+
+    /* ✅ 실시간 미리보기 */
+    document.body.addEventListener("input", e => {
+      if (!e.target.classList.contains("formula-input")) return;
+      const input = e.target;
+      const preview = input.closest(".formula-container").querySelector(".formula-preview");
+      renderFormula(input.value.trim(), preview);
+    });
+
+    function renderFormula(value, preview) {
+      const expr = value
+        .replace(/\^(\d+)/g, "^{$1}")
+        .replace(/√/g, "\\sqrt{}")
+        .replace(/pi|π/gi, "\\pi")
+        .replace(/infty|∞/gi, "\\infty");
+      preview.innerHTML = value ? `\\(${expr}\\)` : "(수식 미리보기)";
+      if (window.MathJax) MathJax.typesetPromise([preview]);
+    }
+
+    /* ✅ 채점 로직 */
+    function gradeQuestion(card) {
+      const btn = card.querySelector(".check-btn");
+      const result = card.querySelector(".result-inline");
+      const correct = card.querySelector(".correct-answer").value.trim();
+      const type = card.querySelector(".answer-type").value.trim();
+      let userAns = "";
+
+      btn.classList.remove("correct","wrong");
+
+      if (type === "객관식") {
+        const checked = [...card.querySelectorAll("input[type='radio']")].find(r => r.checked);
+        userAns = checked ? checked.value.trim() : "";
+      }
+      else if (type === "객관식(복수형)") {
+        const selected = [...card.querySelectorAll("input[type='checkbox']")].filter(c => c.checked).map(c => c.value.trim()).sort().join(",");
+        const correctSet = correct.split(/[, ]+/).map(v => v.trim()).filter(v => v).sort().join(",");
+        if (!selected) return fail();
+        if (selected === correctSet) return pass(); else return fail();
+      }
+      else if (type.startsWith("단답형")) {
+        const input = card.querySelector(".answer-input");
+        userAns = input.value.trim();
+        if (!userAns) return fail();
+        const normalize = s => s.replace(/root/gi,"√").replace(/루트/g,"√").replace(/\s+/g,"").trim();
+        if (normalize(userAns) === normalize(correct)) return pass(); else return fail();
+      }
+
+      function pass(){ result.textContent="✅ 정답!"; result.className="result-inline correct"; btn.classList.add("correct"); btn.textContent="O"; disableAll();}
+      function fail(){ result.textContent="❌ 오답.."; result.className="result-inline wrong"; btn.classList.add("wrong"); btn.textContent="X"; disableAll();}
+      function disableAll(){ btn.disabled=true; card.classList.add("graded"); card.querySelectorAll("input").forEach(i=>i.disabled=true); }
+    }
+
+    document.querySelectorAll(".check-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{const card=btn.closest(".question-card"); gradeQuestion(card);});
+    });
+
+    document.getElementById("check-all").addEventListener("click",()=>{
+      document.querySelectorAll(".question-card").forEach(card=>{
+        const btn=card.querySelector(".check-btn");
+        if(btn && !btn.disabled) gradeQuestion(card);
+      });
+    });
+
+  } catch(err){
+    console.error(err);
+    container.innerHTML="<p style='color:red;'>데이터를 불러오지 못했습니다.</p>";
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v1.2594 UI / UX 정돈 -->
+  <!-- v1.2580 (행렬 제외 전 유형 MathJax 미리보기 적용 — 기존 기능 전부 유지) -->
+  <!-- v1.2578 (단답형 채점 기능 추가 — 기존 기능 전부 유지) -->
+  <!-- v1.2577 (행렬형: 시각적 입력칸 자동 생성 — 기존 기능 전부 유지)-->
+  <!-- v1.2576 (문장 다중정답형 추가 — 기존 기능 전부 유지) -->
+  <!-- v1.2575 (한글 자음형 채점 추가 — 기존 기능 전부 유지) -->
+  <!-- v1.2573 (수식형 교환법칙 완전대응) -->
+  <!-- v1.2572 (수식형 교환법칙 허용 추가 — 기존 기능 전부 유지) -->
+  <!-- v1.2571 (인수분해형 교환규칙 안정화) -->
+  <!-- v1.2570 (인수분해형 채점 기능 추가 — 기존 기능 전부 유지) -->
+  <!-- v1.2569 (문자수식형 채점 기능 추가 — 기존 기능 전부 유지) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채점 페이지</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styleMain.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1 id="page-title">📘 채점 페이지</h1>
+
+    <!-- 상단 버튼 영역 -->
+    <div class="nav-buttons top-buttons" style="text-align:center; margin-bottom:16px;"></div>
+
+    <div id="question-container">데이터를 불러오는 중입니다...</div>
+
+    <!-- 하단 버튼 영역 -->
+    <div class="bottom-buttons" style="text-align:center; margin-top:20px;">
+      <button id="check-all">전부 채점</button><br />
+      <div class="nav-buttons bottom-buttons" style="margin-top:10px;"></div>
+    </div>
+  </div>
+<script>
+const API_URL="https://script.google.com/macros/s/AKfycbwvdVkZm4EVUVeHaelSzQPrtFmOA2bB3A7HFMHEIbb42SbDFfNusYrsLyFbNakLmlMzcQ/exec";
+const MIN_PAGE = 7;      // 첫 쪽 번호
+const MAX_PAGE = 167;    // 마지막 쪽 번호
+
+function renderNavButtons(page) {
+  page = Number(page);
+  const prevBtn = (page > MIN_PAGE)
+    ? `<button class="nav-btn" onclick="location.href='main.html?page=${page - 1}'">⬅ 이전 쪽으로</button>`
+    : "";
+  const nextBtn = (page < MAX_PAGE)
+    ? `<button class="nav-btn" onclick="location.href='main.html?page=${page + 1}'">다음 쪽으로 ➡</button>`
+    : "";
+  const backBtn = `<button class="back-btn" onclick="location.href='index.html'">쪽 선택으로</button>`;
+
+  const html = `
+    <div class="nav-group">
+      ${prevBtn}
+      ${backBtn}
+      ${nextBtn}
+    </div>`;
+  return html;
+}
+
+/* ───────────── 공통 정규화 ───────────── */
+function normalize(s){
+  return (s||"")
+    .replace(/root/gi,"√").replace(/루트/g,"√")
+    .replace(/−/g,"-").replace(/×/g,"*").replace(/\*/g,"")
+    .replace(/\s*또는\s*(?=[a-zA-Z가-힣]+\s*=)/g, ",")
+    .replace(/，/g, ",")
+    .replace(/\s*,\s*/g, ",")
+    .replace(/\s+/g,"")
+    .replace(/,$/,"").replace(/^,/,"")
+    .trim();
+}
+/* 정답 문자열을 파싱해 행렬 구조로 변환하기 */
+function parseMatrixToGrid(str){
+  const clean = String(str)
+    .replace(/\\begin\{pmatrix\}|\(\\begin\{pmatrix\}\)|\\end\{pmatrix\}|\(|\)|\[|\]/g, "")
+    .replace(/,/g, " ")
+    .replace(/&/g, " ")
+    .replace(/\\\\|\\/g, ";") // 행 구분
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const rows = clean.split(";").map(r => r.trim().split(/\s+/).filter(Boolean));
+  return rows.filter(r => r.length > 0);
+}
+/* 입력 순서 상관 없음 */
+function gradeOrderAgnosticList(correct, userList){
+  const n=s=>(s||"").replace(/\s+/g,"").trim();
+  const C=n(correct).split(",").filter(Boolean);
+  const U=userList.map(n);
+  if(C.length!==U.length) return false;
+  const A=[...C].sort(), B=[...U].sort();
+  for(let i=0;i<A.length;i++){if(A[i]!==B[i]) return false;} return true;
+}
+
+/* ───────────── 기본문장형 ───────────── */
+function gradeBasicSentence(correct, user){
+  const norm = s => (s||"").replace(/\s+/g,"").trim();
+  return norm(correct) === norm(user);
+}
+/* ───────────── 문장(정답이 여러 가지) ───────────── */
+function gradeMultiSentence(correct, user){
+  const norm = s => (s||"")
+    .replace(/\s+/g,"") // 모든 공백 제거
+    .trim();
+
+  const corrList = norm(correct).split("또는").filter(Boolean);
+  const userInput = norm(user);
+
+  // 사용자가 여러 문장을 입력했을 수도 있으므로 "또는"으로 다시 분리
+  const userList = userInput.split("또는").filter(Boolean);
+
+  // 정답 목록이 하나라도 포함되면 정답
+  // (ex: corrList=["A","B","C"], userList=["B","C"] → pass)
+  const allCorr = new Set(corrList);
+  return userList.every(u => allCorr.has(u));
+}
+
+/* 한글 자음형 채점 */
+function gradeConsonantAnswer(correct, user){
+  const norm = s => (s||"").replace(/\s+/g,"").replace(/,/g,"").trim();
+  return norm(correct) === norm(user);
+}
+
+/* ───────────── 인수분해형 채점 ───────────── */
+function gradeFactorization(correct, user){
+  const splitFactors = s => normalize(String(s)).match(/(?:\([^()]+\)|[^()]+)/g) || [];
+  const cParts = splitFactors(correct);
+  const uParts = splitFactors(user);
+  if(!cParts.length || !uParts.length) return false;
+
+  const isParen = str => str.startsWith("(") && str.endsWith(")");
+  const cFront = isParen(cParts[0]) ? "" : cParts[0];
+  const uFront = isParen(uParts[0]) ? "" : uParts[0];
+  if(cFront !== uFront) return false;
+
+  const cMain = cFront ? cParts.slice(1) : cParts;
+  const uMain = uFront ? uParts.slice(1) : uParts;
+  if(cMain.length !== uMain.length) return false;
+
+  const sortedC = [...cMain].sort();
+  const sortedU = [...uMain].sort();
+  for(let i=0;i<sortedC.length;i++){
+    if(sortedC[i]!==sortedU[i]) return false;
+  }
+  return true;
+}
+
+
+/* ───────────── 수식(교환법칙 허용) ───────────── */
+function gradeCommutativeExpression(correct, user){
+  // 전체 문자열 정규화
+  const norm = s => (s||"")
+    .replace(/−/g,"-")
+    .replace(/\s+/g,"")
+    .replace(/\+\-/g,"-")
+    .replace(/\-\+/g,"-")
+    .replace(/\+\+/g,"+")
+    .replace(/\-\-/g,"+")
+    .trim();
+
+  // 부호 포함 항 단위 분리
+  function splitTerms(expr){
+    const t = norm(expr);
+    // 맨 앞에 부호가 없으면 +를 추가
+    const prep = /^[+-]/.test(t) ? t : "+" + t;
+    // + 또는 - 앞에서 분리 (부호 유지)
+    return prep.split(/(?=[+-])/).map(x => x.trim()).filter(Boolean);
+  }
+
+  const corrTerms = splitTerms(correct);
+  const userTerms = splitTerms(user);
+  if(corrTerms.length !== userTerms.length) return false;
+
+  // 항 정렬 후 비교 (순서 무시)
+  const sortedC = [...corrTerms].sort();
+  const sortedU = [...userTerms].sort();
+
+  return JSON.stringify(sortedC) === JSON.stringify(sortedU);
+}
+
+
+/* 기존 유틸 함수 */
+function parseKeyValuePairs(text){
+  const pairs=[...String(text).matchAll(/([a-zA-Z가-힣]+)\s*=\s*([^,]+)/g)];
+  return pairs.map(([,key,val])=>[key.trim(),normalize(val)]);
+}
+function gradeSpecialPair(correct,user1,user2,key1,key2){
+  const norm=normalize;
+  const parts=Object.fromEntries(
+    correct.replace(/\s+/g,"").split(",").map(p=>p.split(":").map(x=>norm(x)))
+  );
+  return parts[key1]&&parts[key2]&&norm(parts[key1])===norm(user1)&&norm(parts[key2])===norm(user2);
+}
+function gradeSystemEquationAsMultiset(correct, inputs){
+  const norm=normalize;
+  const corrValues=[...correct.matchAll(/=\s*([^,}]+)/g)].map(m=>norm(m[1]));
+  const userValues=inputs.map(v=>norm(v));
+  if(userValues.length!==corrValues.length) return false;
+  return [...userValues].sort().join(",") === [...corrValues].sort().join(",");
+}
+
+/* ───────────── 메인 로직 ───────────── */
+document.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(window.location.search);
+  const page = params.get("page");
+  const container = document.getElementById("question-container");
+  const title = document.getElementById("page-title");
+  if (!page) {
+    container.innerHTML = "<p>❌ 잘못된 접근입니다.</p>";
+    return;
+  }
+  title.textContent = `📘 ${page}쪽 채점`;
+
+  // 상단·하단 버튼 렌더링
+  document.querySelector(".top-buttons").innerHTML = renderNavButtons(page);
+  document.querySelector(".bottom-buttons .nav-buttons").innerHTML = renderNavButtons(page);
+
+  try{
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    const questions = Object.entries(data)
+      .filter(([_, q]) => q.page == page)
+      .map(([id, q]) => ({ id, ...q }));
+
+    if (questions.length === 0) {
+      container.innerHTML = `<p>❌ ${page}쪽 문항이 없습니다.</p>`;
+      return;
+    }
+
+    container.innerHTML=questions.map(q=>{
+      const type=(q.type||"").trim();
+      const ans =(q.ans ||"").trim();
+      let inputHTML="";
+
+      if(["한글 자음","단답형","수식(교환법칙 허용)","문자수식","등식형","기본문장","문장(정답이 여러 가지)","인수분해"].includes(type)){
+          inputHTML=`<input type="text" class="answer-input" />`;
+      }
+      /* 행렬 */
+      else if(type==="행렬"){
+        const matrix = parseMatrixToGrid(ans);
+        const rows = matrix.length;
+        const cols = matrix[0]?.length || 0;
+
+        inputHTML = `
+          <div class="matrix-input" data-rows="${rows}" data-cols="${cols}">
+            ${matrix.map((row, i) => `
+              <div class="matrix-row">
+                ${row.map((_, j) =>
+                  `<input type="text" class="matrix-cell" data-row="${i}" data-col="${j}" />`
+                ).join("")}
+              </div>
+            `).join("")}
+          </div>`;
+      }
+      else if(type==="입력 순서 상관 없음"){
+        const n=(ans.match(/,/g)||[]).length+1; const small=n>=5?"small-input":"";
+        inputHTML='<div class="multi-inputs">'+Array.from({length:n},(_,i)=>`<div class="formula-input"><input type="text" class="order-agnostic ${small}" data-index="${i}" placeholder="" /><div class="math-preview">입력한 수식</div></div>`).join("")+'</div>';
+      }
+      /* ② 기본 변수 대입형 */
+      else if(type==="변수 대입형"){
+        const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const isMany=labels.length>=5?"small-input":"";
+        inputHTML=`<div class="sub-group"><div class="var-inputs">${
+          labels.map(l=>`<div class="sub-input"><label>${l}</label><div class="formula-input"><input type="text" class="var-basic ${isMany}" data-key="${l}" /><div class="math-preview">입력한 수식</div></div></div>`).join("")
+        }</div></div>`;
+      }
+      /* ③ 변수 대입형(연립방정식) */
+      else if(type==="변수 대입형(연립방정식)"){
+        const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const isMany=labels.length>=5?"small-input":"";
+        inputHTML=`<div class="sub-group"><div class="var-inputs">${
+          labels.map(l=>`<div class="sub-input"><label>${l}</label><div class="formula-input"><input type="text" class="var-system ${isMany}" data-key="${l}" /><div class="math-preview">입력한 수식</div></div></div>`).join("")
+        }</div></div>`;
+      }
+      /* ④ 변수 대입형(방정식)(n개) */
+      else if(/^변수\s*대입형\(방정식\)\(\d+개\)$/.test(type)){
+        const n=parseInt(type.match(/\((\d+)개\)/)[1]);
+        const baseLabels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const total=baseLabels.length + n;
+        const isMany=total>=5?"small-input":"";
+        inputHTML=`<div class="var-inputs">` +
+          baseLabels.map(v=>`<label>${v}</label><div class="formula-input"><input type="text" class="var-eq ${isMany}" data-key="${v}" /><div class="math-preview">입력한 수식</div></div>`).join("") +
+          Array.from({length:n}).map(()=>`<div class="formula-input"><input type="text" class="extra-eq ${isMany}" /><div class="math-preview">입력한 수식</div></div>`).join("") +
+          `</div>`;
+      }
+      /* ⑤ 변수 대입형(방정식) */
+      else if(type==="변수 대입형(방정식)"){
+        const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
+        const isMany=labels.length>=5?"small-input":"";
+        inputHTML=`<div class="sub-group"><div class="var-inputs">${
+          labels.map(l=>`<div class="sub-input"><label>${l}</label><div class="formula-input"><input type="text" class="var-eq ${isMany}" data-key="${l}" /><div class="math-preview">입력한 수식</div></div></div>`).join("")
+        }</div></div>`;
+      }
+      /* ⑦ 소문항형 */
+else if(/\(\d+\)|\([가-사]\)/.test(ans)){
+  const tokens = ans.match(/\((\d+|[가-사])\)/g) || [];
+  const isMany = tokens.length >= 5 ? "small-input" : "";
+
+  // ✅ 소문항 라벨 + 입력칸 묶음 구조 적용
+  inputHTML = `
+    <div class="sub-group">
+      ${tokens.map((t, i) => `
+        <div class="sub-input">
+          <label>${t}</label>
+          <div class="formula-input">
+            <input type="text" class="subans ${isMany}" data-index="${i}" />
+            <div class="math-preview">입력한 수식</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+      /* ⑧ 객관식 / 복수형 */
+      else if(type==="객관식"){
+        const opts=["①","②","③","④","⑤"];
+        inputHTML=`<div class="choices">${
+          opts.map(o=>`<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`).join("")
+        }</div>`;
+      }
+      else if(type==="객관식(복수형)"){
+        const opts=["①","②","③","④","⑤"];
+        inputHTML=`<div class="choices">${
+          opts.map(o=>`<label><input type="checkbox" name="${q.id}" value="${o}">${o}</label>`).join("")
+        }</div>`;
+      }
+      else if(type==="주관식(특수)") {
+        /* ⑨ 단답형 / 특수형 */
+        if(/몫\s*:|나머지\s*:/.test(ans)){
+          inputHTML=`<div class="dual-inputs"><label>몫</label><div class="formula-input"><input type="text" class="ans1" /><div class="math-preview">입력한 수식</div></div>
+            <label>나머지</label><div class="formula-input"><input type="text" class="ans2" /><div class="math-preview">입력한 수식</div></div></div>`;
+        }else if(/실수부분\s*:|허수부분\s*:/.test(ans)){
+          inputHTML=`<div class="dual-inputs"><label>실수부분</label><div class="formula-input"><input type="text" class="ans1" /><div class="math-preview">입력한 수식</div></div>
+            <label>허수부분</label><div class="formula-input"><input type="text" class="ans2" /><div class="math-preview">입력한 수식</div></div></div>`;
+        }else if(/최댓값\s*:|최솟값\s*:/.test(ans)){
+          inputHTML=`<div class="dual-inputs"><label>최댓값</label><div class="formula-input"><input type="text" class="ans1" /><div class="math-preview">입력한 수식</div></div>
+            <label>최솟값</label><div class="formula-input"><input type="text" class="ans2" /><div class="math-preview">입력한 수식</div></div></div>`;
+        }
+      }
+      else{
+        inputHTML=`<input type="text" class="answer-input disabled" value="채점 불가능 유형" disabled />`;
+      }
+      // --- 입력칸 생성 이후 ---
+      if(!["객관식","객관식(복수형)"].includes(type)){
+        inputHTML = inputHTML.replace(
+          /(<input[^>]*class="[^"]*answer-input[^"]*"[^>]*>)/g,
+          `<div class="formula-input">$1<div class="math-preview">입력한 수식</div></div>`
+        );
+      }
+      return `
+        <div class="question-card" data-id="${q.id}">
+          <div class="question-line">
+            <h3>${q.id.replace("q","")}번</h3>
+            ${inputHTML}
+            <button class="check-btn">채점</button>
+            <span class="result-inline"></span>
+          </div>
+          <input type="hidden" class="correct-answer" value="${ans}" />
+          <input type="hidden" class="answer-type" value="${type}" />
+        </div>`;
+
+    }).join("");
+
+    /* ===== 채점 로직 ===== */
+    function gradeQuestion(card){
+      const btn=card.querySelector(".check-btn");
+      const result=card.querySelector(".result-inline");
+      const correct=card.querySelector(".correct-answer").value.trim();
+      const type=card.querySelector(".answer-type").value.trim();
+      const norm=normalize;
+      // --- 단답형 채점
+      if(type==="단답형"){
+        const user=normalize(card.querySelector(".answer-input")?.value.trim()||"");
+        const corr=normalize(correct);
+        return (user===corr)?pass():fail();
+      }
+      // --- 행렬 채점
+      if(type==="행렬"){
+          const corr = parseMatrixToGrid(correct);
+          const user = [];
+          const rows = corr.length;
+          const cols = corr[0].length;
+
+          for(let i=0;i<rows;i++){
+            const rowVals=[];
+            for(let j=0;j<cols;j++){
+              const val=normalize(card.querySelector(`.matrix-cell[data-row="${i}"][data-col="${j}"]`)?.value||"");
+              rowVals.push(val);
+            }
+            user.push(rowVals);
+          }
+
+          const sameSize = user.length===corr.length && user.every((r,i)=>r.length===corr[i].length);
+          if(!sameSize) return fail();
+
+          const ok = user.every((r,i)=>r.every((v,j)=>normalize(v)===normalize(corr[i][j])));
+          return ok ? pass() : fail();
+      }
+
+      // --- 기본문장 채점
+      if(type==="기본문장"){
+        const user=card.querySelector(".answer-input")?.value.trim()||"";
+        return gradeBasicSentence(correct,user)?pass():fail();
+      }
+            // --- 문장(정답이 여러 가지) 채점
+      if(type==="문장(정답이 여러 가지)"){
+        const user=card.querySelector(".answer-input")?.value.trim()||"";
+        return gradeMultiSentence(correct,user)?pass():fail();
+      }
+
+      // --- 한글 자음형 채점
+      if(type==="한글 자음") {
+        const user=card.querySelector(".answer-input")?.value.trim()||"";
+        return gradeConsonantAnswer(correct,user)?pass():fail();
+      }
+      // --- 인수분해형 채점 ---
+      if(type==="인수분해"){
+        const user=card.querySelector(".answer-input")?.value.trim()||"";
+        return gradeFactorization(correct,user)?pass():fail();
+      }
+
+      /* ✅ 수식(교환법칙 허용) */
+      if(type==="수식(교환법칙 허용)"){
+        const user=card.querySelector(".answer-input")?.value.trim()||"";
+        return gradeCommutativeExpression(correct,user)?pass():fail();
+      }
+
+      // --- 기존 유형들 ---
+      if(type==="변수 대입형"){
+        const expected = Object.fromEntries(parseKeyValuePairs(correct));
+        const user = Object.fromEntries(
+          [...card.querySelectorAll(".var-basic")].map(i=>[i.dataset.key, norm(i.value)])
+        );
+        const sameKeys = Object.keys(expected).length===Object.keys(user).length &&
+                         Object.keys(expected).every(k=>user.hasOwnProperty(k));
+        if(!sameKeys) return fail();
+        const ok = Object.entries(expected).every(([k,v])=>user[k]===v);
+        return ok ? pass() : fail();
+      }
+      if(type==="입력 순서 상관 없음"){ 
+        const users=[...card.querySelectorAll(".order-agnostic")].map(i=>i.value);
+        ok=gradeOrderAgnosticList(correct, users);
+        return ok ? pass() : fail();
+      }
+
+      if(/^변수\s*대입형\(방정식\)\(\d+개\)$/.test(type)){
+        const n=parseInt(type.match(/\((\d+)개\)/)[1]);
+        const varVals=[...card.querySelectorAll(".var-eq")].map(i=>norm(i.value));
+        const extraVals=[...card.querySelectorAll(".extra-eq")].map(i=>norm(i.value));
+        const corrVals = correct
+          .replace(/\s*또는\s*/g, ",")
+          .match(/=\s*([^,]+)/g)
+          ?.map(x => x.replace(/^=\s*/, ""))
+          .map(norm) || [];
+        const afterEqPart = correct.split(/[^,]+=.+?(?:,|$)/).pop() || "";
+        const corrExtras = afterEqPart.split(",").map(norm).filter(Boolean);
+        const expected = [...corrVals, ...corrExtras];
+        const user=[...varVals,...extraVals];
+        if(user.length!==expected.length) return fail();
+        return [...user].sort().join(",") === [...expected].sort().join(",") ? pass() : fail();
+      }
+      if(type==="변수 대입형(방정식)"){
+        const inputs=[...card.querySelectorAll(".var-eq")].map(i=>norm(i.value));
+        const corr = correct
+          .replace(/\s*또는\s*/g, ",")
+          .match(/=\s*([^,]+)/g)
+          ?.map(x => x.replace(/^=\s*/, ""))
+          .map(norm) || [];
+        if(inputs.length!==corr.length) return fail();
+        return ([...inputs].sort().join(",") === [...corr].sort().join(",")) ? pass() : fail();
+      }
+      if(type==="변수 대입형(연립방정식)"){
+        const inputs=[...card.querySelectorAll(".var-system")].map(i=>i.value);
+        return gradeSystemEquationAsMultiset(correct,inputs)?pass():fail();
+      }
+
+      const subInputs=card.querySelectorAll(".subans");
+      if(subInputs.length>0){
+        const correctParts=correct.replace(/\)\s*/g,") ")
+          .split(/\(\d+\)|\([가-사]\)/)
+          .map(x=>norm(x.replace(/^\)|\)$/g,""))).filter(Boolean);
+        const userParts=[...subInputs].map(i=>norm(i.value));
+        if(correctParts.length!==userParts.length) return fail();
+        return correctParts.every((c,i)=>c===userParts[i])?pass():fail();
+      }
+
+      if(type==="객관식"){
+        const sel=card.querySelector("input[type=radio]:checked")?.value;
+        return (sel===correct)?pass():fail();
+      }
+
+      if(type==="객관식(복수형)"){
+        const chk=[...card.querySelectorAll("input[type=checkbox]:checked")].map(i=>i.value).join("");
+        return (chk===correct)?pass():fail();
+      }
+
+      /* 문자수식형 */
+      if(type==="문자수식"){
+        const user=norm(card.querySelector(".answer-input")?.value.trim()||"");
+        const corr=norm(correct);
+        return (user===corr)?pass():fail();
+      }
+
+      const ans1=card.querySelector(".ans1")?.value.trim()||"";
+      const ans2=card.querySelector(".ans2")?.value.trim()||"";
+
+      if(/몫\s*:|나머지\s*:/.test(correct))
+        return gradeSpecialPair(correct,ans1,ans2,"몫","나머지")?pass():fail();
+      if(/실수부분\s*:|허수부분\s*:/.test(correct))
+        return gradeSpecialPair(correct,ans1,ans2,"실수부분","허수부분")?pass():fail();
+      if(/최댓값\s*:|최솟값\s*:/.test(correct))
+        return gradeSpecialPair(correct,ans1,ans2,"최댓값","최솟값")?pass():fail();
+
+      if(type==="등식형"){
+        const user=norm(card.querySelector(".answer-input")?.value.trim()||"");
+        return (user===norm(correct))?pass():fail();
+      }
+
+      result.textContent="채점 불가능";
+      result.className="result-inline";
+      return;
+
+      /* ===== 내부 유틸 ===== */
+      function pass(){
+        result.textContent="✅ 정답!";
+        result.classList.add("correct");
+        btn.classList.add("correct");
+        btn.textContent="O";
+        disableAll();
+      }
+      function fail(){
+        result.textContent="❌ 오답..";
+        result.classList.add("wrong");
+        btn.classList.add("wrong");
+        btn.textContent="X";
+        disableAll();
+      }
+      function disableAll(){
+        btn.disabled=true;
+        card.classList.add("graded");
+        card.querySelectorAll("input").forEach(i=>i.disabled=true);
+      }
+    }
+
+    /* 개별 채점 + 모두채점 버튼 */
+    document.querySelectorAll(".check-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>gradeQuestion(btn.closest(".question-card")));
+    });
+
+    document.getElementById("check-all").addEventListener("click",()=>{
+      document.querySelectorAll(".question-card").forEach(card=>{
+        const btn=card.querySelector(".check-btn");
+        if(btn && !btn.disabled) gradeQuestion(card);
+      });
+    });
+    document.addEventListener("input", e=>{
+      // ✅ 행렬형만 제외, 나머지 모든 text input 대상
+      if(e.target.tagName === "INPUT" && e.target.type === "text" && !e.target.classList.contains("matrix-cell")){
+        const val = e.target.value.trim();
+        const preview = e.target.closest(".formula-input")?.querySelector(".math-preview");
+        if(preview){
+          preview.innerHTML = val ? `\\(${val}\\)` : "";
+          MathJax.typesetPromise([preview]);
+        }
+      }
+    });
+  }catch(err){
+    container.innerHTML="<p style='color:red;'>데이터를 불러오지 못했습니다.</p>";
+  }
+});
+</script>
+</body>
+</html>

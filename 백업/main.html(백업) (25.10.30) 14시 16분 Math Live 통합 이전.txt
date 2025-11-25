@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채점 페이지</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+/* ====== 각 문항 한 줄 레이아웃 ====== */
+.question-line {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 📱 모바일 대응 */
+@media (max-width: 600px) {
+  .question-line {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ====== 카드 전체 ====== */
+.question-card {
+  background: #f8f9ff;
+  border: 1px solid #dde2f2;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.question-card.graded {
+  background: #f1f1f1;
+  border-color: #ccc;
+}
+
+/* ====== 문항번호 ====== */
+.question-card h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #2a5adf;
+  font-weight: 600;
+  text-align: right;
+  width: 60px;
+  flex-shrink: 0;
+}
+
+/* ====== 입력칸 (단답형 / 주관식) ====== */
+.answer-input {
+  flex: 1 1 60%;
+  max-width: 60%;
+  padding: 8px 10px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  height: 40px;
+  box-sizing: border-box;
+}
+.answer-input:disabled {
+  background: #eee;
+  color: #777;
+}
+
+/* ====== 객관식 선택지 ====== */
+.choices {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1 1 60%;
+  max-width: 60%;
+  height: 40px;
+  gap: 5px;
+}
+.choices label:hover {
+  background: #dce8ff;
+}
+/* 선택 시(checked) */
+.choices input:checked + label {
+  background: #2a5adf;
+  color: white;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px #173aaf;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+/* 비활성화 상태 */
+.choices input:disabled + label {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #d9d9d9;
+  color: #020202;
+}
+
+/* ====== 채점 버튼 ====== */
+.check-btn {
+  background: #2a5adf;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+  text-align: center;
+  transition: all 0.25s ease;
+  margin-left: 20px;
+  margin-right: 5%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.check-btn:hover:not(.correct):not(.wrong):not(:disabled) {
+  background: #173aaf;
+}
+.check-btn.correct {
+  background: #e4f9ec;
+  color: #0b7a32;
+  border: 1.5px solid #1a8f4c;
+}
+.check-btn.wrong {
+  background: #ffe9e9;
+  color: #c81c1c;
+  border: 1.5px solid #d93025;
+}
+.check-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ====== 채점 결과 ====== */
+.result-inline {
+  font-weight: bold;
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: right;
+  flex: 0 0 auto;
+  margin-right: 5%;
+}
+.correct { color: #1a8f4c; }
+.wrong { color: #d93025; }
+
+/* ====== 하단 버튼 ====== */
+/* ✅ 쪽 선택으로 돌아가기 버튼 스타일 */
+.back-btn {
+  background-color: #3cb371;     /* 기본 초록 (mediumseagreen) */
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+.back-btn:hover {
+  background-color: #2e8b57;     /* hover 시 진한 초록 */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.back-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.bottom-buttons {
+  text-align: center;
+  margin-top: 25px;
+}
+#check-all {
+  background: #444;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+#check-all:hover {
+  background: #222;
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="page-title">📘 채점 페이지</h1>
+    <div id="question-container">데이터를 불러오는 중입니다...</div>
+
+    <div class="bottom-buttons">
+      <button id="check-all">🧮 모두 채점</button>
+      <br />
+      <button onclick="window.location.href='index.html'" class="back-btn" style="margin-top:15px;">
+  ⬅ 쪽 선택으로 돌아가기
+</button>
+    </div>
+  </div>
+
+  <script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbwvdVkZm4EVUVeHaelSzQPrtFmOA2bB3A7HFMHEIbb42SbDFfNusYrsLyFbNakLmlMzcQ/exec";
+
+  function getPageParam() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("page");
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const page = getPageParam();
+    const title = document.getElementById("page-title");
+    const container = document.getElementById("question-container");
+
+    if (!page) {
+      container.innerHTML = "<p>❌ 잘못된 접근입니다.</p>";
+      return;
+    }
+
+    title.textContent = `📘 ${page}쪽 채점`;
+
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const filtered = Object.entries(data)
+        .filter(([_, q]) => q.page == page)
+        .map(([id, q]) => ({ id, ...q }));
+
+      if (filtered.length === 0) {
+        container.innerHTML = "<p>❌ 해당 쪽의 문항이 없습니다.</p>";
+        return;
+      }
+
+      container.innerHTML = filtered.map(q => {
+        const type = q.type?.trim() || "";
+        let inputHTML = "";
+        let disabledAttr = "";
+        let disabledMsg = "";
+
+        if (type === "객관식") {
+          const options = ["①", "②", "③", "④", "⑤"];
+          inputHTML = `
+            <div class="choices">
+              ${options.map(opt =>
+                `<label><input type="radio" name="${q.id}" value="${opt}">${opt}</label>`
+              ).join("")}
+            </div>`;
+        } 
+        else if (type === "객관식(복수형)") {
+          const options = ["①", "②", "③", "④", "⑤"];
+          inputHTML = `
+            <div class="choices">
+              ${options.map(opt =>
+                `<label><input type="checkbox" name="${q.id}" value="${opt}">${opt}</label>`
+              ).join("")}
+            </div>`;
+        } 
+        else if (type === "단답형(정수)") {
+          inputHTML = `<input type="number" class="answer-input" placeholder="정답을 입력하세요" />`;
+        } 
+        else if (type === "단답형(한글문자)") {
+          inputHTML = `<input type="text" class="answer-input" placeholder="정답을 입력하세요. 예) ㄱ, ㄴ (띄어쓰기 상관 없음)" />`;
+        } 
+        else if (type === "단답형(문자수식)") {
+          inputHTML = `<input type="text" class="answer-input" placeholder="정답을 입력하세요. 예) √2, 루트2, root2" />`;
+        } 
+        else if (type === "단답형" || type === "주관식") {
+          inputHTML = `<input type="text" class="answer-input" value="현재 버전에서는 지원하지 않습니다" disabled style="color:#d93025; font-weight:600;" />`;
+          disabledAttr = "disabled";
+          disabledMsg = "data-disabled='true'";
+        } 
+        else if (type === "서술형") {
+          inputHTML = `<p style="color:gray;">📝 서술형은 자동채점 대상이 아닙니다.</p>`;
+          disabledAttr = "disabled";
+          disabledMsg = "data-disabled='true'";
+        }
+
+        return `
+          <div class="question-card" data-id="${q.id}">
+            <div class="question-line">
+              <h3>${q.id.replace("q","")}번</h3>
+              ${inputHTML}
+              ${type !== "서술형" ? `<button class="check-btn" ${disabledAttr} ${disabledMsg}>채점</button>` : ""}
+              <span class="result-inline"></span>
+            </div>
+            <input type="hidden" class="correct-answer" value="${q.ans}" />
+            <input type="hidden" class="answer-type" value="${type}" />
+          </div>
+        `;
+      }).join("");
+
+      // ✅ 채점 함수
+      function gradeQuestion(card) {
+        const btn = card.querySelector(".check-btn");
+        const result = card.querySelector(".result-inline");
+        const correct = card.querySelector(".correct-answer").value.trim();
+        const type = card.querySelector(".answer-type").value.trim();
+        let userAns = "";
+
+        if (btn.hasAttribute("data-disabled")) return false;
+
+        btn.classList.remove("correct", "wrong");
+        btn.textContent = "채점";
+
+        // 단일 객관식
+        if (type === "객관식") {
+          const radios = card.querySelectorAll("input[type='radio']");
+          const checked = [...radios].find(r => r.checked);
+          userAns = checked ? checked.value.trim() : "";
+
+          if (!userAns) {
+            result.textContent = "⚠️ 입력 없음";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+            return false;
+          }
+
+          const correctAnswers = correct.split(/[, ]+/).map(v => v.trim()).filter(v => v);
+          if (correctAnswers.includes(userAns)) {
+            result.textContent = "✅ 정답!";
+            result.className = "result-inline correct";
+            btn.classList.add("correct");
+            btn.textContent = "O";
+          } else {
+            result.textContent = "❌ 오답..";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+          }
+
+          [...radios].forEach(r => (r.disabled = true));
+        }
+
+        // 복수형 객관식
+        else if (type === "객관식(복수형)") {
+          const checkboxes = card.querySelectorAll("input[type='checkbox']");
+          const selected = [...checkboxes].filter(c => c.checked).map(c => c.value.trim()).sort().join(",");
+          const correctSet = correct.split(/[, ]+/).map(v => v.trim()).filter(v => v).sort().join(",");
+
+          if (!selected) {
+            result.textContent = "⚠️ 입력 없음";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+            return false;
+          }
+
+          if (selected === correctSet) {
+            result.textContent = "✅ 정답!";
+            result.className = "result-inline correct";
+            btn.classList.add("correct");
+            btn.textContent = "O";
+          } else {
+            result.textContent = "❌ 오답..";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+          }
+
+          [...checkboxes].forEach(c => (c.disabled = true));
+        }
+
+        // 단답형(정수)
+        else if (type === "단답형(정수)") {
+          const input = card.querySelector(".answer-input");
+          userAns = input.value.trim();
+
+          if (!userAns) {
+            result.textContent = "⚠️ 입력 없음";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+            return false;
+          }
+
+          if (Number(userAns) === Number(correct)) {
+            result.textContent = "✅ 정답!";
+            result.className = "result-inline correct";
+            btn.classList.add("correct");
+            btn.textContent = "O";
+          } else {
+            result.textContent = "❌ 오답..";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+          }
+
+          input.disabled = true;
+        }
+
+        // 단답형(한글문자)
+        else if (type === "단답형(한글문자)") {
+          const input = card.querySelector(".answer-input");
+          userAns = input.value.trim();
+
+          if (!userAns) {
+            result.textContent = "⚠️ 입력 없음";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+            return false;
+          }
+
+          if (userAns.replace(/\s+/g, "").toLowerCase() === correct.replace(/\s+/g, "").toLowerCase()) {
+            result.textContent = "✅ 정답!";
+            result.className = "result-inline correct";
+            btn.classList.add("correct");
+            btn.textContent = "O";
+          } else {
+            result.textContent = "❌ 오답..";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+          }
+
+          input.disabled = true;
+        }
+
+        // 단답형(문자수식)
+        else if (type === "단답형(문자수식)") {
+          const input = card.querySelector(".answer-input");
+          userAns = input.value.trim();
+
+          const normalize = str =>
+            str.replace(/root/gi, "√")
+               .replace(/루트/g, "√")
+               .replace(/\s+/g, "")
+               .trim();
+
+          if (!userAns) {
+            result.textContent = "⚠️ 입력 없음";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+            return false;
+          }
+
+          if (normalize(userAns) === normalize(correct)) {
+            result.textContent = "✅ 정답!";
+            result.className = "result-inline correct";
+            btn.classList.add("correct");
+            btn.textContent = "O";
+          } else {
+            result.textContent = "❌ 오답..";
+            result.className = "result-inline wrong";
+            btn.classList.add("wrong");
+            btn.textContent = "X";
+          }
+
+          input.disabled = true;
+        }
+
+        btn.disabled = true;
+        card.classList.add("graded");
+        return true;
+      }
+
+      // 개별 채점 버튼
+      document.querySelectorAll(".check-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const card = btn.closest(".question-card");
+          gradeQuestion(card);
+        });
+      });
+
+      // 모두 채점 버튼
+      document.getElementById("check-all").addEventListener("click", () => {
+        const allCards = document.querySelectorAll(".question-card");
+        allCards.forEach(card => {
+          const btn = card.querySelector(".check-btn");
+          if (btn && !btn.disabled) gradeQuestion(card);
+        });
+      });
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = "<p style='color:red;'>데이터를 불러오지 못했습니다.</p>";
+    }
+  });
+</script>
+
+
+</body>
+</html>
