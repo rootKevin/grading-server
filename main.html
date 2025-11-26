@@ -144,7 +144,8 @@ function gradeConsonantAnswer(correct, user){
 
 /* ───────────── 인수분해형 채점 ───────────── */
 function gradeFactorization(correct, user){
-  const splitFactors = s => normalize(String(s)).match(/(?:\([^()]+\)|[^()]+)/g) || [];
+  const splitFactors = s =>
+  normalize(String(s)).match(/\([^()]*\)/g) || [];
   const cParts = splitFactors(correct);
   const uParts = splitFactors(user);
   if(!cParts.length || !uParts.length) return false;
