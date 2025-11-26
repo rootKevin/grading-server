@@ -22,7 +22,7 @@ app.get("/questions", async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      "SELECT * FROM grading_data_RPM_GongSu1 WHERE page = ? ORDER BY number ASC",
+      "SELECT * FROM grading_data_RPM_GongSu1 WHERE page = ? ORDER BY question_no ASC",
       [page]
     );
 
