@@ -172,8 +172,8 @@ function gradeCommutativeExpression(correct, user){
     return prep.split(/(?=[+-])/).map(x => x.trim()).filter(Boolean);
   }
 
-  const corrTerms = splitTerms(correct);
-  const userTerms = splitTerms(user);
+  const corrTerms = splitTerms(norm(correct));
+  const userTerms = splitTerms(norm(user));
   if(corrTerms.length !== userTerms.length) return false;
 
   // 항 정렬 후 비교 (순서 무시)
