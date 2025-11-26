@@ -71,6 +71,7 @@ function normalize(s){
     .replace(/，/g, ",")
     .replace(/\s*,\s*/g, ",")
     .replace(/\s+/g,"")
+    .replace(/\)+$/g, "")   // 끝에 붙은 ) 제거
     .replace(/,$/,"").replace(/^,/,"")
     .trim();
 }
