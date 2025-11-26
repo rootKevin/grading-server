@@ -1,11 +1,11 @@
 // v1.2590 (쪽 선택 전체 중앙 고정 — 행 단위 좌측 정렬 유지)
-const API_URL = "https://grading-server-production.up.railway.app/questions";
+const API_URL = "https://grading-server-production.up.railway.app";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const container = document.getElementById("chapter-container");
 
   try {
-    const res = await fetch(`${API_URL}?page=${page}`);
+    const res = await fetch(`${API_URL}/pages`);
     const data = await res.json();
 
     // 모든 페이지 번호 모으기
