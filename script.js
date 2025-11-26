@@ -6,21 +6,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     const res = await fetch(`${API_URL}/pages`);
-    const data = await res.json();
+    const pages = await res.json();   // <-- 배열로 받아야 함
 
-    // 모든 페이지 번호 모으기
-    const allPages = new Set();
-    Object.values(data).forEach(q => {
-      if (q.page) allPages.add(Number(q.page));
-    });
+    if (!Array.isArray(pages) || pages.length === 0) {
+      container.innerHTML = `<p style="color:red;">페이지 데이터가 없습니다.</p>`;
+      return;
+    }
 
-    const sortedPages = Array.from(allPages).sort((a, b) => a - b);
+    const sortedPages = pages.sort((a, b) => a - b);
 
-    // 가장 긴 쪽 번호 기준으로 폭 계산
-    const maxLen = Math.max(...sortedPages.map(p => String(p).length)) + 1; // "쪽" 포함
+    const maxLen = Math.max(...sortedPages.map(p => String(p).length)) + 1;
     const btnWidth = `${maxLen * 14 + 20}px`;
 
-    // 10쪽 단위로 묶기
     const rows = [];
     let currentRow = [];
     let currentBase = Math.floor(sortedPages[0] / 10);
@@ -36,7 +33,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     if (currentRow.length) rows.push(currentRow);
 
-    // ✅ <div class="chapter-inner"> 로 감싸기
     const innerHTML =
       `<div class="chapter-inner">` +
       rows
@@ -53,7 +49,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       `</div>`;
 
     container.innerHTML = innerHTML;
+
   } catch (err) {
+    console.error(err);
     container.innerHTML = `<p style="color:red;">데이터를 불러오지 못했습니다.</p>`;
   }
 });
