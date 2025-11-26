@@ -66,6 +66,10 @@ function normalize(s){
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1/$2")
     .replace(/\\sqrt\{([^}]+)\}/g, "√$1")
 
+    // \pm{i}, \pm i, ±i → 모두 ±i 로 통일
+    .replace(/\\pm\s*\{?\s*([^\}]+)\s*\}?/g, "±$1")
+    .replace(/±\s*/g, "±")
+
     // ★ 반드시 먼저 — 유니코드 minus 정리
     .replace(/−/g,"-")
 
