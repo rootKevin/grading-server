@@ -45,5 +45,16 @@ app.get("/questions", async (req, res) => {
     res.status(500).json({ error: "DB error" });
   }
 });
+app.get("/pages", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT DISTINCT page FROM grading_data_RPM_GongSu1 ORDER BY page ASC"
+    );
+    res.json(rows.map(r => r.page));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "DB error" });
+  }
+});
 
 app.listen(3000, () => console.log("🚀 Server running on 3000"));
