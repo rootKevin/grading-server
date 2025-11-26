@@ -22,17 +22,17 @@ app.get("/questions", async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      "SELECT * FROM grading_data WHERE page = ? ORDER BY number ASC",
+      "SELECT * FROM grading_data_RPM_GongSu1 WHERE page = ? ORDER BY number ASC",
       [page]
     );
 
     // main.html의 구조에 맞게 변환
     const result = {};
     rows.forEach((r) => {
-      const id = "q" + r.number;
+      const id = "q" + r.question_no;
       result[id] = {
         page: r.page,
-        type: r.type,
+        type: r.answer_type,
         ans: r.answer
       };
     });

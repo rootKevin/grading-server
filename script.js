@@ -1,5 +1,5 @@
 // v1.2590 (쪽 선택 전체 중앙 고정 — 행 단위 좌측 정렬 유지)
-const API_URL = "https://script.google.com/macros/s/AKfycbwvdVkZm4EVUVeHaelSzQPrtFmOA2bB3A7HFMHEIbb42SbDFfNusYrsLyFbNakLmlMzcQ/exec";
+const API_URL = "https://grading-server-production.up.railway.app/questions";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const container = document.getElementById("chapter-container");
