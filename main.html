@@ -63,6 +63,7 @@ function renderNavButtons(page) {
 /* ───────────── 공통 정규화 ───────────── */
 function normalize(s){
   return (s||"")
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1/$2")
     .replace(/\\sqrt\{([^}]+)\}/g, "√$1")
     .replace(/root/gi,"√").replace(/루트/g,"√")
     .replace(/−/g,"-").replace(/×/g,"*").replace(/\*/g,"")
