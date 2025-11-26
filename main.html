@@ -65,17 +65,31 @@ function normalize(s){
   return (s||"")
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1/$2")
     .replace(/\\sqrt\{([^}]+)\}/g, "√$1")
+
+    // ★ 반드시 먼저 — 유니코드 minus 정리
+    .replace(/−/g,"-")
+
+    // 곱셈표 제거
+    .replace(/×/g,"*").replace(/\*/g,"")
+
+    // 루트 통일
     .replace(/root/gi,"√").replace(/루트/g,"√")
-    .replace(/−/g,"-").replace(/×/g,"*").replace(/\*/g,"")
-    .replace(/\s*또는\s*(?=[a-zA-Z가-힣]+\s*=)/g, ",")
+
+    // 쉼표, 공백 통일
     .replace(/，/g, ",")
     .replace(/\s*,\s*/g, ",")
+
+    // MathJax preview 제거
+    .replace(/\\\(|\\\)/g, "")
+
+    // 잉여 괄호 제거는 가장 마지막
     .replace(/\s+/g,"")
-    .replace(/\\\(|\\\)/g, "")   // MathJax preview용 \( \) 제거
-    .replace(/\)+$/g, "")   // 끝에 붙은 ) 제거
+    .replace(/\)+$/g, "")
+
     .replace(/,$/,"").replace(/^,/,"")
     .trim();
 }
+
 /* 정답 문자열을 파싱해 행렬 구조로 변환하기 */
 function parseMatrixToGrid(str){
   const clean = String(str)
