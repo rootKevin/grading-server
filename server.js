@@ -31,7 +31,9 @@ app.get("/questions", async (req, res) => {
     rows.forEach((r) => {
       const id = "q" + r.question_no;
       result[id] = {
+        chapter: r.chapter,
         page: r.page,
+        guestion_no : r.question_no,
         type: r.answer_type,
         ans: r.answer
       };
