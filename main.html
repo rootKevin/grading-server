@@ -64,68 +64,46 @@ function renderNavButtons(page) {
 function normalize(s){
   let t = (s || "").trim();
 
-  /* ========== 0. LaTeX 기본 정리 ========== */
-  t = t
-    .replace(/\\\(|\\\)/g, "")   // \(...\) 제거
-    .replace(/\\ /g, "")         // '\ ' 제거
-    .replace(/\s+/g, " ")        // 연속 공백 → 한 칸
-    .trim();
+  // 0. MathJax Wrapper 제거
+  t = t.replace(/\\\(|\\\)/g, "");
 
-  /* ========== 1. 루트 먼저 처리 ========== */
-  // \sqrt{2} → √2
-  t = t.replace(/\\sqrt\s*\{([^}]+)\}/g, "√$1");
-
-  // root(2), 루트2 → √2
-  t = t.replace(/root\s*\(?\s*([^)]+)\s*\)?/gi, "√$1");
-  t = t.replace(/루트\s*([0-9a-zA-Z]+)/g, "√$1");
-
-  /* ========== 2. 분수 처리 (중첩 괄호 케이스 대응) ========== */
-  // \frac{\sqrt{2}i}{2} 같이 분자에 \sqrt 가 있어도 이제 정상 동작
+  // 1. LaTeX 분수 최우선 처리
   t = t.replace(/\\frac\s*\{([^}]+)\}\s*\{([^}]+)\}/g, "$1/$2");
 
-  /* ========== 3. ±, 부호, 쉼표/공백 통합 ========== */
+  // 2. 중괄호, 공백, 유니코드 쉼표/마이너스 통일
+  t = t.replace(/[{}]/g, "")
+       .replace(/，/g, ",")
+       .replace(/−/g, "-")
+       .replace(/\s+/g, "");
 
-  // \pm i, \pm{i}, ± i → ±i
-  t = t.replace(/\\pm\s*\{?\s*([^\}]+)\s*\}?/g, "±$1");
-  t = t.replace(/±\s*/g, "±");
+  // 3. √ 처리
+  t = t.replace(/\\sqrt\{([^}]+)\}/g, "√$1")
+       .replace(/root\(?([^)]+)\)?/gi, "√$1")
+       .replace(/루트\s*([0-9a-zA-Z]+)/g, "√$1");
 
-  // 유니코드 minus 통일
-  t = t.replace(/−/g, "-");
+  // 4. ±와 \pm 처리
+  t = t.replace(/±/g, "±")
+       .replace(/\\pm\s*/g, "±");
 
-  // 쉼표/공백 정리
-  t = t
-    .replace(/，/g, ",")
-    .replace(/\s*,\s*/g, ",")
-    .replace(/\s+/g, "");
+  // 5. 곱셈 생략 → 명시로 변환
+  // 2a → 2*a, a(b+1) → a*(b+1), √3i → √3*i
+  t = t.replace(/(\d)([a-zA-Z√i])/g, "$1*$2")
+       .replace(/([a-zA-Z√i])\(/g, "$1*(")
+       .replace(/\)([a-zA-Z√i\d])/g, ")*$1")
+       .replace(/√([^+*/()\-]*)i/g, "√$1*i");
 
-  /* ========== 4. 곱셈 생략 패턴 통일 ========== */
-  // 숫자 바로 뒤의 문자: 2x → 2*x
-  t = t.replace(/(\d)([a-zA-Z])/g, "$1*$2");
-
-  // 루트 뒤의 문자: √2i → √2*i
-  t = t.replace(/(√[^+*/()\-,]+)([a-zA-Z])/g, "$1*$2");
-
-  // 괄호 뒤의 문자: (x+1)i → (x+1)*i
-  t = t.replace(/(\))([a-zA-Z])/g, "$1*$2");
-
-  // 문자 뒤의 괄호: x(x+1) → x*(x+1)
-  t = t.replace(/([a-zA-Z])\(/g, "$1*(");
-
-  // 숫자 뒤의 괄호: 2(x+1) → 2*(x+1)
-  t = t.replace(/(\d)\(/g, "$1*(");
-
-  // ) 뒤의 숫자: (x+1)2 → (x+1)*2
-  t = t.replace(/\)(\d)/g, ")*$1");
-
-  // 중복 곱셈 기호 정리
+  // 6. 중복 곱셈기호 정리
   t = t.replace(/\*\*/g, "*");
 
-  /* ========== 5. 잉여 기호 정리 ========== */
-  t = t.replace(/,$/, "").replace(/^,/, "");
-  t = t.replace(/^\((.*)\)$/, "$1");
+  // 7. 잉여 괄호 제거
+  if(t.startsWith("(") && t.endsWith(")")){
+    t = t.slice(1, -1);
+  }
 
   return t.trim();
 }
+
+
 
 /* 정답 문자열을 파싱해 행렬 구조로 변환하기 */
 function parseMatrixToGrid(str){
@@ -621,6 +599,27 @@ else if(/\(\d+\)|\([가-사]\)/.test(ans)){
     container.innerHTML="<p style='color:red;'>데이터를 불러오지 못했습니다.</p>";
   }
 });
+
+console.log("===== 정규화 TEST START =====");
+const tests = [
+  ["(-3±√5)/2", "\\frac{-3±\\sqrt{5}}{2}"],
+  ["3x", "3*x"],
+  ["√2i", "√2*i"],
+  ["a(b+1)", "a*(b+1)"],
+  ["\\frac{5}{3}", "5/3"],
+  ["2√3", "2*√3"],
+  ["-(√5)i", "-√5*i"],
+  ["(x+1)2", "(x+1)*2"],
+  ["-3\\sqrt{5}/2", "-3√5/2"]
+];
+
+tests.forEach(([c,u])=>{
+  console.log("correct : ", c, " → ", normalize(c));
+  console.log("user    : ", u, " → ", normalize(u));
+  console.log("---");
+});
+console.log("===== 정규화 TEST END =====");
+
 </script>
 </body>
 </html>
