@@ -101,7 +101,25 @@ function normalize(s){
 
   return t.trim();
 }
+function normalizeFactorization(s){
+  let t = (s || "").trim();
 
+  // 1. \(...\) wrapper 제거
+  t = t.replace(/\\\(|\\\)/g, "");
+
+  // 2. 유니코드 기호 통일
+  t = t.replace(/，/g, ",").replace(/−/g, "-");
+
+  // 3. \pm → ±
+  t = t.replace(/\\pm/g, "±");
+
+  // 4. 루트 괄호 내부의 LaTeX는 √로 변환하되 중괄호 유지
+  //    단, inner "\sqrt{5}" → "√5"로 바꾸므로 여기만 최소 변환
+  t = t.replace(/\\sqrt\{5\}/g, "√5")
+       .replace(/\\sqrt\{([^}]+)\}/g, "√$1");
+
+  return t;
+}
 /* 정답 문자열을 파싱해 행렬 구조로 변환하기 */
 function parseMatrixToGrid(str){
   const clean = String(str)
@@ -156,29 +174,19 @@ function gradeConsonantAnswer(correct, user){
 
 /* ───────────── 인수분해형 채점 ───────────── */
 function gradeFactorization(correct, user){
-  const splitFactors = s =>
-  normalize(String(s)).match(/\([^()]*\)/g) || [];
-  const cParts = splitFactors(correct);
-  const uParts = splitFactors(user);
-  if(!cParts.length || !uParts.length) return false;
+  const C = normalizeFactorization(correct);
+  const U = normalizeFactorization(user);
 
-  const isParen = str => str.startsWith("(") && str.endsWith(")");
-  const cFront = isParen(cParts[0]) ? "" : cParts[0];
-  const uFront = isParen(uParts[0]) ? "" : uParts[0];
-  if(cFront !== uFront) return false;
+  const cParts = C.match(/\([^()]+\)/g) || []; // ← ✅ 항 추출
+  const uParts = U.match(/\([^()]+\)/g) || [];
 
-  const cMain = cFront ? cParts.slice(1) : cParts;
-  const uMain = uFront ? uParts.slice(1) : uParts;
-  if(cMain.length !== uMain.length) return false;
+  if(cParts.length !== uParts.length) return false;
 
-  const sortedC = [...cMain].sort();
-  const sortedU = [...uMain].sort();
-  for(let i=0;i<sortedC.length;i++){
-    if(sortedC[i]!==sortedU[i]) return false;
-  }
-  return true;
+  const sortedC = [...cParts].sort();
+  const sortedU = [...uParts].sort();
+
+  return JSON.stringify(sortedC) === JSON.stringify(sortedU);
 }
-
 
 /* ───────────── 수식(교환법칙 허용) ───────────── */
 function gradeCommutativeExpression(correct, user){
