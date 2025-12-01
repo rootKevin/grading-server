@@ -61,49 +61,113 @@ function renderNavButtons(page) {
 }
 
 /* ───────────── 공통 정규화 ───────────── */
+/* ───────────── 공통 정규화 ───────────── */
 function normalize(s){
   let t = (s || "").trim();
 
-  // 0. MathJax Wrapper 제거
+  // 0. MathJax wrapper 제거: \(...\)
   t = t.replace(/\\\(|\\\)/g, "");
 
-  // 1. LaTeX 분수 처리
-  t = t.replace(/\\frac\s*\{([^}]+)\}\s*\{([^}]+)\}/g, "$1/$2");
+  // 1. LaTeX \frac{...}{...} (중첩 중괄호 포함) → (분자)/(분모)
+  t = (function convertFrac(str){
+    let out = [];
+    let i = 0, n = str.length;
 
-  // 2. 유니코드 기호 통일
+    while (i < n) {
+      if (str[i] === "\\" && str.startsWith("\\frac", i)) {
+        i += 5; // "\frac" 건너뜀
+
+        // 공백 스킵
+        while (i < n && /\s/.test(str[i])) i++;
+
+        // 분자 시작은 반드시 '{' 라고 가정
+        if (i >= n || str[i] !== "{") {
+          out.push("\\frac");
+          continue;
+        }
+
+        // --- 분자 파싱 (중첩 중괄호 허용) ---
+        i++; // '{' 뒤로
+        let depth = 0;
+        const startNum = i;
+        while (i < n) {
+          const c = str[i];
+          if (c === "{") depth++;
+          else if (c === "}") {
+            if (depth === 0) break; // 분자 끝
+            depth--;
+          }
+          i++;
+        }
+        const num = str.slice(startNum, i); // 바깥 {} 제외된 분자
+        i++; // '}' 뒤로
+
+        // 공백 스킵
+        while (i < n && /\s/.test(str[i])) i++;
+
+        // --- 분모 파싱 ---
+        if (i >= n || str[i] !== "{") {
+          // 이상한 형태면 그냥 원문 일부를 남김
+          out.push("\\frac{" + num + "}");
+          continue;
+        }
+        i++; // '{' 뒤로
+        depth = 0;
+        const startDen = i;
+        while (i < n) {
+          const c = str[i];
+          if (c === "{") depth++;
+          else if (c === "}") {
+            if (depth === 0) break; // 분모 끝
+            depth--;
+          }
+          i++;
+        }
+        const den = str.slice(startDen, i);
+        i++; // '}' 뒤로
+
+        // 분자/분모를 (num)/(den) 형태로 변환
+        out.push("(" + num + ")/" + den);
+      } else {
+        out.push(str[i]);
+        i++;
+      }
+    }
+    return out.join("");
+  })(t);
+
+  // 2. 유니코드 기호 통일 + 공백 제거
   t = t.replace(/，/g, ",")
        .replace(/−/g, "-")
        .replace(/\s+/g, "");
 
-  // 3. ± 처리 (핵심)
+  // 3. ± 처리
   t = t.replace(/\\pm/g, "±").replace(/±/g, "±");
 
   // 4. sqrt / root / 루트 → √ 로 변환
   t = t.replace(/\\sqrt\{([^}]+)\}/g, "√$1")
+       .replace(/\{√([^}]+)\}/g, "√$1")         // {√5} → √5
        .replace(/root\(?([^)]+)\)?/gi, "√$1")
        .replace(/루트\s*([0-9a-zA-Z]+)/g, "√$1");
 
-  // 5. √ 바로 뒤 i 붙는 경우도 * 처리
+  // 5. √ 바로 뒤 i 붙는 경우 곱셈표시 추가: √3i → √3*i
   t = t.replace(/√([^+*/()\-]*)i/g, "√$1*i");
 
-  // 6. 곱 생략 보완 (2a → 2*a 등)
+  // 6. 곱 생략 보완 (2a, a(b+1), )(2 등)
   t = t.replace(/(\d)([a-zA-Z√i])/g, "$1*$2")
        .replace(/([a-zA-Z√i])\(/g, "$1*(")
        .replace(/\)([a-zA-Z√i\d])/g, ")*$1");
 
-  // 7. 중복 곱셈 기호 제거
+  // 7. 중복 곱셈 기호 정리
   t = t.replace(/\*\*/g, "*");
 
-  // 8. 잉여 괄호 제거
-  if(t.startsWith("(") && t.endsWith(")")){
+  // 8. 양 끝 전체를 감싼 괄호 한 겹 제거
+  if (t.startsWith("(") && t.endsWith(")")) {
     t = t.slice(1, -1);
   }
 
   return t.trim();
 }
-
-
-
 
 /* 정답 문자열을 파싱해 행렬 구조로 변환하기 */
 function parseMatrixToGrid(str){
