@@ -384,10 +384,10 @@ else if(/\(\d+\)|\([가-사]\)/.test(ans)){
       const type=card.querySelector(".answer-type").value.trim();
       const norm=normalize;
       // --- 단답형 채점
-      if(type==="단답형"){
-        const user=normalize(card.querySelector(".answer-input")?.value.trim()||"");
-        const corr=normalize(correct);
-        return (user===corr)?pass():fail();
+      if(type === "단답형"){
+        const user = normalize(card.querySelector(".answer-input")?.value.trim() || "");
+        const corr = normalize(correct);
+        return (user === corr) ? pass() : fail();
       }
       // --- 행렬 채점
       if(type==="행렬"){
