@@ -1,8 +1,8 @@
+import express from "express";
+import cors from "cors";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 import path from "path";
-const express = require("express");
-const mysql = require("mysql2/promise");
-const cors = require("cors");
-require("dotenv").config();
 
 const app = express();
 
