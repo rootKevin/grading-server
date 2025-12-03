@@ -1,20 +1,48 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <!-- v1.2581 (쪽 번호 10쪽 단위 행 정렬 — 기존 기능 전부 유지) -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채점 앱 (쪽 선택)</title>
+  <title>채점 앱 (교재 페이지 선택)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <h1>📘 채점 앱 <span>(쪽 선택)</span></h1>
-    <div id="chapter-container" class="chapter-container">
-        <p>📡 데이터를 불러오는 중입니다...</p>
-    </div>
-  </div>
 
-  <script src="script.js"></script>
+<body>
+
+<!-- 상단 내비게이션 -->
+<nav class="navbar">
+  <a href="/dashboard">🏠 홈</a>
+  <a href="#features">📘 교재</a>
+  <a href="#settings">🧮 채점</a>
+  <div class="user-name" id="navbar-user-name">👤 양지우</div>
+  <button class="logout-btn" onclick="logout()">🚪 로그아웃</button>
+</nav>
+
+<!-- 본문 내용 -->
+<div class="container dash-container">
+  <h1 class="dash-title" id="workbook-title">📘 교재를 불러오는 중...</h1>
+
+  <div id="chapter-container" class="chapter-container">
+    <p>📡 데이터를 불러오는 중입니다...</p>
+  </div>
+</div>
+
+<script>
+/* 교재 이름 반영 (Batch import는 이미 성공하셨으므로 값만 불러옴) */
+const workbook = localStorage.getItem("workbook");
+if (!workbook) {
+  document.getElementById("workbook-title").textContent = "⚠ 교재가 선택되지 않았습니다.";
+} else {
+  document.getElementById("workbook-title").textContent = "📘" + workbook;
+}
+
+/* 로그아웃 처리 */
+function logout(){
+  alert("로그아웃 되었습니다.");
+  location.href="/";
+}
+</script>
+
+<script src="script.js"></script>
 </body>
 </html>

@@ -7,68 +7,6 @@
   <title>채점 앱 대시보드</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* ───────── 상단 네비게이션 바 ───────── */
-    .navbar {
-      width: 100%;
-      background: #2a5adf;
-      color: white;
-      padding: 12px 20px;
-      font-weight: 600;
-      font-size: 16px;
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 999;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      box-sizing: border-box;
-    }
-    .navbar a {
-      color: white;
-      text-decoration: none;
-      opacity: 0.92;
-      transition: 0.2s;
-    }
-    .navbar a:hover {
-      opacity: 1;
-      transform: translateY(-1px);
-    }
-
-    .navbar .user-name {
-      position: absolute;
-      right: 120px;
-      font-size: 14px;
-      background: rgba(255,255,255,0.16);
-      padding: 5px 10px;
-      border-radius: 8px;
-      backdrop-filter: blur(3px);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .navbar .logout-btn {
-      position: absolute;
-      right: 20px;
-      background: rgba(255,255,255,0.22);
-      border: 1.5px solid rgba(255,255,255,0.6);
-      color: white;
-      font-weight: 600;
-      font-size: 13px;
-      padding: 6px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.05s ease;
-    }
-    .navbar .logout-btn:hover {
-      background: rgba(255,255,255,0.35);
-      transform: translateY(-1px);
-    }
-    .navbar .logout-btn:active {
-      transform: translateY(0);
-    }
-
     /* ───────── 본문 레이아웃 ───────── */
     body { margin: 0; background: #f3f5ff; }
     .dash-container {
