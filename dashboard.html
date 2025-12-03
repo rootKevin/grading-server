@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <!-- v1.2601 (대시보드 상단 네비게이션 바 추가) -->
+  <!-- v1.2604 (교재 선택 모달 추가 — 로그인 성공 후 첫 화면) -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,16 +12,18 @@
       width: 100%;
       background: #2a5adf;
       color: white;
-      padding: 12px 0;
+      padding: 12px 20px;
       font-weight: 600;
       font-size: 16px;
       display: flex;
       justify-content: center;
       gap: 18px;
+      align-items: center;
       position: sticky;
       top: 0;
       z-index: 999;
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      box-sizing: border-box;
     }
     .navbar a {
       color: white;
@@ -34,95 +36,268 @@
       transform: translateY(-1px);
     }
 
-    /* ───────── 본문 레이아웃 ───────── */
-    body {
-      background: #f3f5ff;
-      margin: 0;
+    .navbar .user-name {
+      position: absolute;
+      right: 120px;
+      font-size: 14px;
+      background: rgba(255,255,255,0.16);
+      padding: 5px 10px;
+      border-radius: 8px;
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
+    .navbar .logout-btn {
+      position: absolute;
+      right: 20px;
+      background: rgba(255,255,255,0.22);
+      border: 1.5px solid rgba(255,255,255,0.6);
+      color: white;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.05s ease;
+    }
+    .navbar .logout-btn:hover {
+      background: rgba(255,255,255,0.35);
+      transform: translateY(-1px);
+    }
+    .navbar .logout-btn:active {
+      transform: translateY(0);
+    }
+
+    /* ───────── 본문 레이아웃 ───────── */
+    body { margin: 0; background: #f3f5ff; }
     .dash-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 32px 16px;
     }
-    .dash-card {
-      width: 100%;
-      max-width: 900px;
-      background: white;
-      border: 1px solid #dde2f2;
-      border-radius: 14px;
-      padding: 24px 20px;
-      margin-bottom: 16px;
-      box-sizing: border-box;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
-    }
     .dash-title {
       font-size: 22px;
       color: #2a5adf;
-      margin: 0 0 20px;
-      text-align: center;
+      margin-bottom: 22px;
     }
 
-    /* ───────── 반응형 ───────── */
-    @media (max-width: 1024px){
-      .navbar { font-size: 14px; gap: 12px; }
-      .dash-title { font-size: 20px; }
+    /* ───────── 메뉴 카드 그리드 ───────── */
+    .menu-grid {
+      width: 100%;
+      max-width: 950px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 10px;
+      justify-content: center;
+      align-items: stretch;
     }
-    @media (max-width: 767px){
-      .navbar { font-size: 13px; flex-wrap: wrap; gap: 9px; padding: 10px 4px; }
-      .dash-card { padding: 18px 12px; }
+    .menu-card {
+      background: white;
+      border: 1px solid #ccd4ff;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.2s ease;
+    }
+    .menu-card:hover { transform: translateY(-4px); }
+    .menu-btn {
+      width: 100%;
+      background: #2a5adf;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.05s ease;
+    }
+    .menu-btn:hover { background: #2047b0; }
+    .menu-btn:active { transform: scale(0.97); }
+    .menu-icon { font-size: 26px; }
+
+    /* ───────── 모달 ───────── */
+    .modal-bg {
+      display:none;
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,0.32); /* semi-dark overlay */
+      backdrop-filter: blur(2px);
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+    }
+    .modal {
+      background:white;
+      width:90%;
+      max-width:420px;
+      border-radius:14px;
+      padding:22px 18px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.10);
+      animation: pop 0.25s ease-out;
+    }
+    @keyframes pop {
+      from { transform: scale(0.92); opacity:0 }
+      to   { transform: scale(1);    opacity:1 }
+    }
+    .modal h2 {
+      margin:0 0 16px;
+      font-size:18px;
+      color:#2a5adf;
+      text-align:center;
+    }
+    .modal .workbooks {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .modal .workbook-btn {
+      background:#f1f4ff;
+      color:#2a5adf;
+      border:1.5px solid #ccd4ff;
+      padding:10px;
+      border-radius:10px;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      transition:0.2s;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:6px;
+    }
+    .modal .workbook-btn:hover {
+      background:#e8ecff;
+      transform: translateY(-2px);
+    }
+    .modal .close-btn {
+      margin-top:18px;
+      width:100%;
+      background:#2a5adf;
+      color:white;
+      border:none;
+      border-radius:10px;
+      padding:10px;
+      font-weight:600;
+      font-size:13px;
+      cursor:pointer;
+      transition:0.2s;
+    }
+    .modal .close-btn:hover { background:#2047b0; }
+
+    @media (max-width:1024px){
+      .menu-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width:767px){
+      .menu-grid { grid-template-columns: 1fr; }
+      .modal { padding:18px 12px; }
+      .modal h2 { font-size:15px; }
     }
   </style>
 </head>
+
 <body>
 
-<!-- 상단 네비게이션 -->
 <nav class="navbar">
   <a href="#">🏠 홈</a>
-  <a href="#how">📖 사용법</a>
   <a href="#features">🧮 채점유형</a>
-  <a href="#settings">⚙ 설정</a>
+
+  <div class="user-name">👤 양지우</div>
+  <button class="logout-btn" onclick="logout()">🚪 로그아웃</button>
 </nav>
 
 <div class="dash-container">
+  <h1 class="dash-title">✨ 수학 채점 앱</h1>
 
-  <div class="dash-card">
-    <h1 class="dash-title">📘 수학 채점 앱 대시보드</h1>
+  <div class="menu-grid">
 
-    <!-- 기능 소개 -->
-    <section>
-      <h2 id="features" class="dash-title">✨ 지원 채점 유형</h2>
-      <div class="dash-card">
-        <p>• 객관식 / 객관식(복수형)</p>
-        <p>• 단답형 (정수/유리수/일부 문자 포함)</p>
-        <p>• 수식형(교환법칙 허용) / 등식형 / 인수분해형</p>
-        <p>• 변수 대입형 (단일/다중/연립/행렬)</p>
-        <p>• 한글 자음 정답형</p>
-        <p>• 입력 순서 상관 없는 복수 정답형</p>
-      </div>
-    </section>
-
-    <!-- 사용 방법 요약 -->
-    <section>
-      <h2 id="how" class="dash-title">📖 사용 흐름</h2>
-      <div class="dash-card">
-        <p>1. 로그인 후 대시보드 진입</p>
-        <p>2. 쪽 선택 페이지로 이동</p>
-        <p>3. 각 쪽의 문항 채점 또는 전체 일괄 채점</p>
-        <p>4. 채점 결과 저장 및 확인</p>
-      </div>
-    </section>
-
-    <!-- 메뉴 버튼 영역 -->
-    <div class="nav-group" style="justify-content:center;">
-      <button onclick="location.href='index.html'" class="page-btn">📄 쪽 선택 시작</button>
-      <button onclick="alert('일괄채점 기능은 다음 버전에서 추가!')" class="page-btn">✅ 전체 일괄 채점</button>
-      <button onclick="alert('오답 노트 기능은 다음에 구현할 거야!')" class="page-btn">❌ 오답노트 보기</button>
+    <div class="menu-card">
+      <button onclick="openModal()" class="menu-btn">
+        <span class="menu-icon">📘</span>
+        <span>교재 선택</span>
+      </button>
+    </div>
+    <div class="menu-card">
+      <button onclick="alert('준비중입니다!')" class="menu-btn">
+        <span class="menu-icon">📖</span>
+        <span>사용법</span>
+      </button>
+    </div>
+    <div class="menu-card">
+      <button onclick="alert('준비중입니다!')" class="menu-btn">
+        <span class="menu-icon">✅</span>
+        <span>전체 일괄 채점</span>
+      </button>
+    </div>
+    <div class="menu-card">
+      <button onclick="alert('준비중입니다!')" class="menu-btn">
+        <span class="menu-icon">❌</span>
+        <span>오답 노트</span>
+      </button>
+    </div>
+    <div class="menu-card">
+      <button onclick="alert('준비중입니다!')" class="menu-btn">
+        <span class="menu-icon">📊</span>
+        <span>채점 통계</span>
+      </button>
+    </div>
+    <div class="menu-card">
+      <button onclick="alert('준비중입니다!')" class="menu-btn">
+        <span class="menu-icon">⚙</span>
+        <span>환경 설정</span>
+      </button>
     </div>
 
   </div>
-
 </div>
+
+<!-- ───────── 교재 선택 모달 ───────── -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h2>📘 교재를 선택하세요</h2>
+    <div class="workbooks">
+
+      <button class="workbook-btn" onclick="chooseWorkbook('공통수학1 RPM')">📘 공통수학1 RPM</button>
+      <button class="workbook-btn" onclick="chooseWorkbook('공통수학2 RPM')">📗 공통수학2 RPM</button>
+      <button class="workbook-btn" onclick="chooseWorkbook('고급수학 RPM')">📙 고급수학 RPM</button>
+
+    </div>
+
+    <button class="close-btn" onclick="closeModal()">닫기</button>
+  </div>
+</div>
+
+<script>
+function openModal(){
+  document.getElementById("modal-bg").style.display="flex";
+}
+function closeModal(){
+  document.getElementById("modal-bg").style.display="none";
+}
+function chooseWorkbook(name){
+  localStorage.setItem("workbook", name);
+  alert("선택되었습니다: "+name);
+  closeModal();
+}
+// 이후 index.html 진입 시, localStorage.getItem("workbook") 으로 교재 기준 분기 가능
+function logout(){
+  alert("로그아웃 되었습니다.");
+  location.href="login.html";
+}
+</script>
 
 </body>
 </html>
