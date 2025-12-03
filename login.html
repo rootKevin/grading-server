@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v1.2600 (로그인 첫 화면 추가 — 기존 기능 전부 유지) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채점 앱 로그인</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- 로그인 전용 심플 스타일 (기존 톤과 맞춤) -->
+  <style>
+    body {
+      background: #f3f5ff;
+    }
+
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 24px 28px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+      max-width: 360px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .login-card h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      text-align: center;
+      color: #2a5adf;
+    }
+
+    .login-card p.subtitle {
+      margin: 0 0 18px;
+      text-align: center;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .login-form label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 2px;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #ccd4ff;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .login-input:focus {
+      outline: none;
+      border-color: #2a5adf;
+      box-shadow: 0 0 0 2px rgba(42, 90, 223, 0.2);
+    }
+
+    .login-btn {
+      margin-top: 6px;
+      width: 100%;
+      padding: 9px 0;
+      border-radius: 10px;
+      border: none;
+      background: #2a5adf;
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.05s ease;
+    }
+
+    .login-btn:hover {
+      background: #2047b0;
+      transform: translateY(-1px);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .login-hint {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #777;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        margin: 0 16px;
+        padding: 20px 18px;
+      }
+      .login-card h1 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h1>📘 채점 앱</h1>
+      <p class="subtitle">로그인 후 쪽 선택 페이지로 이동합니다.</p>
+
+      <form class="login-form" onsubmit="return handleLogin(event)">
+        <div>
+          <label for="login-id">아이디 또는 이메일</label>
+          <input
+            id="login-id"
+            class="login-input"
+            type="text"
+            placeholder="예: teacher01"
+            autocomplete="username"
+          />
+        </div>
+        <div>
+          <label for="login-pw">비밀번호</label>
+          <input
+            id="login-pw"
+            class="login-input"
+            type="password"
+            placeholder="비밀번호를 입력하세요"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <button type="submit" class="login-btn">로그인</button>
+      </form>
+
+      <p class="login-hint">
+        ※ 현재는 테스트 단계라<br />
+        아이디/비밀번호를 검증하지 않고<br />
+        바로 쪽 선택 화면으로 이동합니다.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    function handleLogin(e) {
+      e.preventDefault();
+      // TODO: 나중에 실제 로그인 검증 로직을 여기에 추가
+      window.location.href = "dashboard.html"; // 기존 쪽 선택 페이지로 이동
+      return false;
+    }
+  </script>
+</body>
+</html>

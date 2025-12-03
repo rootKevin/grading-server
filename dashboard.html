@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v1.2601 (대시보드 상단 네비게이션 바 추가) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채점 앱 대시보드</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ───────── 상단 네비게이션 바 ───────── */
+    .navbar {
+      width: 100%;
+      background: #2a5adf;
+      color: white;
+      padding: 12px 0;
+      font-weight: 600;
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      opacity: 0.92;
+      transition: 0.2s;
+    }
+    .navbar a:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
+    /* ───────── 본문 레이아웃 ───────── */
+    body {
+      background: #f3f5ff;
+      margin: 0;
+    }
+    .dash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+    .dash-card {
+      width: 100%;
+      max-width: 900px;
+      background: white;
+      border: 1px solid #dde2f2;
+      border-radius: 14px;
+      padding: 24px 20px;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    }
+    .dash-title {
+      font-size: 22px;
+      color: #2a5adf;
+      margin: 0 0 20px;
+      text-align: center;
+    }
+
+    /* ───────── 반응형 ───────── */
+    @media (max-width: 1024px){
+      .navbar { font-size: 14px; gap: 12px; }
+      .dash-title { font-size: 20px; }
+    }
+    @media (max-width: 767px){
+      .navbar { font-size: 13px; flex-wrap: wrap; gap: 9px; padding: 10px 4px; }
+      .dash-card { padding: 18px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 상단 네비게이션 -->
+<nav class="navbar">
+  <a href="#">🏠 홈</a>
+  <a href="#how">📖 사용법</a>
+  <a href="#features">🧮 채점유형</a>
+  <a href="#settings">⚙ 설정</a>
+</nav>
+
+<div class="dash-container">
+
+  <div class="dash-card">
+    <h1 class="dash-title">📘 수학 채점 앱 대시보드</h1>
+
+    <!-- 기능 소개 -->
+    <section>
+      <h2 id="features" class="dash-title">✨ 지원 채점 유형</h2>
+      <div class="dash-card">
+        <p>• 객관식 / 객관식(복수형)</p>
+        <p>• 단답형 (정수/유리수/일부 문자 포함)</p>
+        <p>• 수식형(교환법칙 허용) / 등식형 / 인수분해형</p>
+        <p>• 변수 대입형 (단일/다중/연립/행렬)</p>
+        <p>• 한글 자음 정답형</p>
+        <p>• 입력 순서 상관 없는 복수 정답형</p>
+      </div>
+    </section>
+
+    <!-- 사용 방법 요약 -->
+    <section>
+      <h2 id="how" class="dash-title">📖 사용 흐름</h2>
+      <div class="dash-card">
+        <p>1. 로그인 후 대시보드 진입</p>
+        <p>2. 쪽 선택 페이지로 이동</p>
+        <p>3. 각 쪽의 문항 채점 또는 전체 일괄 채점</p>
+        <p>4. 채점 결과 저장 및 확인</p>
+      </div>
+    </section>
+
+    <!-- 메뉴 버튼 영역 -->
+    <div class="nav-group" style="justify-content:center;">
+      <button onclick="location.href='index.html'" class="page-btn">📄 쪽 선택 시작</button>
+      <button onclick="alert('일괄채점 기능은 다음 버전에서 추가!')" class="page-btn">✅ 전체 일괄 채점</button>
+      <button onclick="alert('오답 노트 기능은 다음에 구현할 거야!')" class="page-btn">❌ 오답노트 보기</button>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
