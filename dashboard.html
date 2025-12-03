@@ -287,11 +287,18 @@ function openModal(){
 function closeModal(){
   document.getElementById("modal-bg").style.display="none";
 }
+/* 교재 선택 + 저장 + 공통수학1이면 페이지 선택기로 이동 */
 function chooseWorkbook(name){
   localStorage.setItem("workbook", name);
-  alert("선택되었습니다: "+name);
-  closeModal();
+
+  if(name === "공통수학1 RPM"){
+    location.href = "gongsu1-rpm-pages.html"; // ✅ 선택 즉시 이동
+  } else {
+    alert("교재 선택 완료: " + name);
+    closeModal();
+  }
 }
+
 // 이후 index.html 진입 시, localStorage.getItem("workbook") 으로 교재 기준 분기 가능
 function logout(){
   alert("로그아웃 되었습니다.");
