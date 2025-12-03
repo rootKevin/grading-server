@@ -1,3 +1,4 @@
+import path from "path";
 const express = require("express");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
@@ -8,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MySQL 연결
+// MySQL 연결 (Railway Primary DB)
 const db = mysql.createPool({
   host: process.env.MYSQLHOST,
   port: process.env.MYSQLPORT,
@@ -18,7 +19,22 @@ const db = mysql.createPool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 특정 page의 문제 가져오기
+/* ───────────── 1. 로그인 (최초 접속) ───────────── */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+/* ───────────── 2. 대시보드 (로그인 성공 후 첫 화면) ───────────── */
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
+/* ───────────── 3. 공통수학1 RPM 쪽 선택 페이지 ───────────── */
+app.get("/rpm/common1/pages", (req, res) => {
+  res.sendFile(path.join(__dirname, "gongsu1-rpm-pages.html"));
+});
+
+/* ───────────── 4. 특정 page의 문제 가져오기 (채점용 데이터 API) ───────────── */
 app.get("/questions", async (req, res) => {
   const page = req.query.page;
   if (!page) return res.status(400).json({ error: "page is required" });
@@ -29,14 +45,13 @@ app.get("/questions", async (req, res) => {
       [page]
     );
 
-    // main.html의 구조에 맞게 변환
     const result = {};
     rows.forEach((r) => {
       const id = "q" + r.question_no;
       result[id] = {
         chapter: r.chapter,
         page: r.page,
-        guestion_no : r.question_no,
+        question_no: r.question_no,
         type: r.answer_type,
         ans: r.answer
       };
@@ -48,6 +63,8 @@ app.get("/questions", async (req, res) => {
     res.status(500).json({ error: "DB error" });
   }
 });
+
+/* ───────────── 5. 교재 전체 page 목록 불러오기 API ───────────── */
 app.get("/pages", async (req, res) => {
   try {
     const [rows] = await db.query(
