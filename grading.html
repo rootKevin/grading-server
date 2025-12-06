@@ -31,12 +31,12 @@ const MAX_PAGE = 167;    // 마지막 쪽 번호
 function renderNavButtons(page) {
   page = Number(page);
   const prevBtn = (page > MIN_PAGE)
-    ? `<button class="nav-btn" onclick="location.href='main.html?page=${page - 1}'">⬅ 이전 쪽으로</button>`
+    ? `<button class="nav-btn" onclick="location.href='grading.html?page=${page - 1}'">⬅ 이전 쪽으로</button>`
     : "";
   const nextBtn = (page < MAX_PAGE)
-    ? `<button class="nav-btn" onclick="location.href='main.html?page=${page + 1}'">다음 쪽으로 ➡</button>`
+    ? `<button class="nav-btn" onclick="location.href='grading.html?page=${page + 1}'">다음 쪽으로 ➡</button>`
     : "";
-  const backBtn = `<button class="back-btn" onclick="location.href='index.html'">쪽 선택으로</button>`;
+  const backBtn = `<button class="back-btn" onclick="location.href='gongsu1-rpm-pages.html'">쪽 선택으로</button>`;
 
   const html = `
     <div class="nav-group">
@@ -320,6 +320,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if(type==="단답형") {
         if(option1 === "단항식") {
           inputHTML=`<input type="text" class="answer-input" />`;
+        }
+        else {
+          inputHTML=`<input type="text" class="answer-input disabled" value="채점 불가능 유형" disabled />`;
         }
       }
       /* ⑧ 객관식 / 복수형 */
