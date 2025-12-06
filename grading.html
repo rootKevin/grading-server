@@ -315,6 +315,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       if(["한글 자음","단답형","수식(교환법칙 허용)","문자수식","등식형","기본문장","문장(정답이 여러 가지)","인수분해"].includes(type)){
           inputHTML=`<input type="text" class="answer-input" />`;
       }
+      /* ⑧ 객관식 / 복수형 */
+      else if(type==="객관식"){
+        const opts=["①","②","③","④","⑤"];
+        inputHTML=`<div class="choices">${
+          opts.map(o=>`<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`).join("")
+        }</div>`;
+      }
+      else if(type==="객관식(복수형)"){
+        const opts=["①","②","③","④","⑤"];
+        inputHTML=`<div class="choices">${
+          opts.map(o=>`<label><input type="checkbox" name="${q.id}" value="${o}">${o}</label>`).join("")
+        }</div>`;
+      }
       /* 행렬 */
       else if(type==="행렬"){
         const matrix = parseMatrixToGrid(ans);
@@ -331,9 +344,6 @@ document.addEventListener("DOMContentLoaded", async () => {
               </div>
             `).join("")}
           </div>`;
-      }
-      else if(type==="입력 순서 상관 없음"){
-        inputHTML='<div class="multi-inputs">'+Array.from({length:n},(_,i)=>`<div class="formula-input"><input type="text" class="order-agnostic" data-index="${i}" placeholder="" /><div class="math-preview">입력한 수식</div></div>`).join("")+'</div>';
       }
       /* ② 기본 변수 대입형 */
       else if(type==="변수 대입형"){
@@ -367,53 +377,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         }</div></div>`;
       }
       /* ⑦ 소문항형 */
-else if(/\(\d+\)|\([가-사]\)/.test(ans)){
-  const tokens = ans.match(/\((\d+|[가-사])\)/g) || [];
-
-  // ✅ 소문항 라벨 + 입력칸 묶음 구조 적용
-  inputHTML = `
-    <div class="sub-group">
-      ${tokens.map((t, i) => `
-        <div class="sub-input">
-          <label>${t}</label>
-          <div class="formula-input">
-            <input type="text" class="subans" data-index="${i}" />
-            <div class="math-preview">입력한 수식</div>
+      else if(/\(\d+\)|\([가-사]\)/.test(ans)){
+        const tokens = ans.match(/\((\d+|[가-사])\)/g) || [];
+        // ✅ 소문항 라벨 + 입력칸 묶음 구조 적용
+        inputHTML = `
+          <div class="sub-group">
+            ${tokens.map((t, i) => `
+              <div class="sub-input">
+                <label>${t}</label>
+                <div class="formula-input">
+                  <input type="text" class="subans" data-index="${i}" />
+                  <div class="math-preview">입력한 수식</div>
+                </div>
+              </div>
+            `).join("")}
           </div>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-      /* ⑧ 객관식 / 복수형 */
-      else if(type==="객관식"){
-        const opts=["①","②","③","④","⑤"];
-        inputHTML=`<div class="choices">${
-          opts.map(o=>`<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`).join("")
-        }</div>`;
-      }
-      else if(type==="객관식(복수형)"){
-        const opts=["①","②","③","④","⑤"];
-        inputHTML=`<div class="choices">${
-          opts.map(o=>`<label><input type="checkbox" name="${q.id}" value="${o}">${o}</label>`).join("")
-        }</div>`;
-      }
-      else if(type==="주관식(특수)") {
-        /* ⑨ 단답형 / 특수형 */
-        if(/몫\s*:|나머지\s*:/.test(ans)){
-          inputHTML=`<div class="dual-inputs"><label>몫</label><div class="formula-input"><input type="text" class="ans1" /><div class="math-preview">입력한 수식</div></div>
-            <label>나머지</label><div class="formula-input"><input type="text" class="ans2" /><div class="math-preview">입력한 수식</div></div></div>`;
-        }else if(/실수부분\s*:|허수부분\s*:/.test(ans)){
-          inputHTML=`<div class="dual-inputs"><label>실수부분</label><div class="formula-input"><input type="text" class="ans1" /><div class="math-preview">입력한 수식</div></div>
-            <label>허수부분</label><div class="formula-input"><input type="text" class="ans2" /><div class="math-preview">입력한 수식</div></div></div>`;
-        }else if(/최댓값\s*:|최솟값\s*:/.test(ans)){
-          inputHTML=`<div class="dual-inputs"><label>최댓값</label><div class="formula-input"><input type="text" class="ans1" /><div class="math-preview">입력한 수식</div></div>
-            <label>최솟값</label><div class="formula-input"><input type="text" class="ans2" /><div class="math-preview">입력한 수식</div></div></div>`;
-        }
+        `;
       }
       else{
         inputHTML=`<input type="text" class="answer-input disabled" value="채점 불가능 유형" disabled />`;
-      }
+      }   
       // --- 입력칸 생성 이후 ---
       if(!["객관식","객관식(복수형)"].includes(type)){
         inputHTML = inputHTML.replace(
