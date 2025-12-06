@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             `<div class="page-row">${row
               .map(
                 p =>
-                  `<button class="page-btn" style="width:${btnWidth}" onclick="location.href='main.html?page=${p}'">${p}쪽</button>`
+                  `<button class="page-btn" style="width:${btnWidth}" onclick="location.href='grading.html?page=${p}'">${p}쪽</button>`
               )
               .join("")}</div>`
         )
