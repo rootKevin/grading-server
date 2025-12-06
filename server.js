@@ -47,12 +47,15 @@ app.get("/questions", async (req, res) => {
 
     const result = {};
     rows.forEach((r) => {
-      const id = "q" + r.question_no;
+      const id = r.id;
       result[id] = {
         chapter: r.chapter,
         page: r.page,
-        question_no: r.question_no,
+        question_no: r.question_number,
         type: r.answer_type,
+        gradingOption1 : r.grading_option1,
+        gradingOption2 : r.grading_option2,
+        gradingOption3 : r. grading_option3,
         ans: r.answer
       };
     });
