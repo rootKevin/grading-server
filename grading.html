@@ -310,6 +310,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.innerHTML=questions.map(q=>{
       const type=(q.type||"").trim();
       const ans =(q.ans ||"").trim();
+      const option1=(q.gradingOption1||"").trim();
       let inputHTML="";
 
       if(["한글 자음","단답형","수식(교환법칙 허용)","문자수식","등식형","기본문장","문장(정답이 여러 가지)","인수분해"].includes(type)){
@@ -317,16 +318,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       /* ⑧ 객관식 / 복수형 */
       else if(type==="객관식"){
-        const opts=["①","②","③","④","⑤"];
-        inputHTML=`<div class="choices">${
-          opts.map(o=>`<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`).join("")
-        }</div>`;
-      }
-      else if(type==="객관식(복수형)"){
-        const opts=["①","②","③","④","⑤"];
-        inputHTML=`<div class="choices">${
-          opts.map(o=>`<label><input type="checkbox" name="${q.id}" value="${o}">${o}</label>`).join("")
-        }</div>`;
+          if(option1==="복수형"){
+          const opts=["①","②","③","④","⑤"];
+          inputHTML=`<div class="choices">${
+            opts.map(o=>`<label><input type="checkbox" name="${q.id}" value="${o}">${o}</label>`).join("")
+          }</div>`;          
+        }
+        else {
+          const opts=["①","②","③","④","⑤"];
+          inputHTML=`<div class="choices">${
+            opts.map(o=>`<label><input type="radio" name="${q.id}" value="${o}">${o}</label>`).join("")
+          }</div>`;
+        }
       }
       /* 행렬 */
       else if(type==="행렬"){
