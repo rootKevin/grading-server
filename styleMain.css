@@ -133,3 +133,9 @@
   align-items: center;
   gap: 6px;
 }
+
+/* 오답 카드 강조 */
+.question-card.wrong {
+  background: #ffe6e6 !important;
+  border-color: #ff7575 !important;
+}
