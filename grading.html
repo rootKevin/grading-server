@@ -19,6 +19,7 @@
 
     <!-- 하단 버튼 영역 -->
     <div class="bottom-buttons" style="text-align:center; margin-top:20px;">
+      <div id="wrong-list" style="color:red; margin:12px 0; font-weight:bold;"></div>
       <button id="check-all">전부 채점</button><br />
       <div class="nav-buttons bottom-buttons" style="margin-top:10px;"></div>
     </div>
@@ -27,6 +28,8 @@
 const API_URL = "https://grading-server-production.up.railway.app/questions";
 const MIN_PAGE = 7;      // 첫 쪽 번호
 const MAX_PAGE = 167;    // 마지막 쪽 번호
+
+let wrongNumbers = [];
 
 function renderNavButtons(page) {
   page = Number(page);
@@ -619,7 +622,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         result.classList.add("wrong");
         btn.classList.add("wrong");
         btn.textContent="X";
+        card.classList.add("wrong");
         disableAll();
+        // 문항 번호 가져오기
+        const qNo = card.querySelector("h3").textContent.replace("번","");
+        // 중복 방지하고 저장
+        if(!wrongNumbers.includes(qNo)){
+          wrongNumbers.push(qNo);
+        }
       }
       function disableAll(){
         btn.disabled=true;
@@ -638,6 +648,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const btn=card.querySelector(".check-btn");
         if(btn && !btn.disabled) gradeQuestion(card);
       });
+      document.getElementById("wrong-list").textContent =
+      wrongNumbers.length ? `틀린 문제: ${wrongNumbers.join(", ")}` : "";
     });
     document.addEventListener("input", e=>{
       // ✅ 행렬형만 제외, 나머지 모든 text input 대상
