@@ -31,26 +31,34 @@ app.get("/dashboard", (req, res) => {
 
 /* ───────────── 4. 특정 page의 문제 가져오기 (채점용 데이터 API) ───────────── */
 app.get("/questions", async (req, res) => {
-  const page = req.query.page;
-  if (!page) return res.status(400).json({ error: "page is required" });
+  const { workbook, page } = req.query;
+
+  if (!workbook) {
+    return res.status(400).json({ error: "workbook is required" });
+  }
+  if (!page) {
+    return res.status(400).json({ error: "page is required" });
+  }
 
   try {
     const [rows] = await db.query(
-      "SELECT * FROM grading_data WHERE workbook? AND page = ? ORDER BY question_number ASC",
+      `SELECT *
+       FROM grading_data
+       WHERE workbook = ? AND page = ?
+       ORDER BY question_number ASC`,
       [workbook, page]
     );
 
     const result = {};
     rows.forEach((r) => {
-      const id = r.id;
-      result[id] = {
+      result[r.id] = {
         chapter: r.chapter,
         page: r.page,
         question_no: r.question_number,
         type: r.answer_type,
-        gradingOption1 : r.grading_option1,
-        gradingOption2 : r.grading_option2,
-        gradingOption3 : r. grading_option3,
+        gradingOption1: r.grading_option1,
+        gradingOption2: r.grading_option2,
+        gradingOption3: r.grading_option3,
         ans: r.answer
       };
     });
