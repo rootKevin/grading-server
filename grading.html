@@ -26,8 +26,8 @@
   </div>
 <script>
 const API_BASE = "https://grading-server-production.up.railway.app";
-const MIN_PAGE = 7;      // 첫 쪽 번호
-const MAX_PAGE = 167;    // 마지막 쪽 번호
+let MIN_PAGE = null;
+let MAX_PAGE = null;
 
 let wrongNumbers = [];
 
@@ -298,6 +298,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   title.textContent = `📘 ${page}쪽 채점`;
+
+  /* ✅ 1. 교재별 페이지 범위 가져오기 */
+  const rangeRes = await fetch(
+    `${API_BASE}/page-range?workbook=${encodeURIComponent(workbook)}`
+  );
+  const range = await rangeRes.json();
+
+  MIN_PAGE = range.minPage;
+  MAX_PAGE = range.maxPage;
 
   // 상단·하단 버튼 렌더링
   document.querySelector(".top-buttons").innerHTML = renderNavButtons(page, workbook);
