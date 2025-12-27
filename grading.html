@@ -449,7 +449,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return `
         <div class="question-card" data-id="${q.id}">
           <div class="question-line">
-            <h3>${q.id.replace("q","")}번</h3>
+            <h3>${q.question_no.replace("q","")}번</h3>
             ${inputHTML}
             <button class="check-btn">채점</button>
             <span class="result-inline"></span>
