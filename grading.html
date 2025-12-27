@@ -299,7 +299,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.innerHTML = "<p>❌ 잘못된 접근입니다.</p>";
     return;
   }
-  title.textContent = `📘 ${page}쪽 채점`;
+  title.textContent = `📘${workbook} / ${page}쪽`;
 
   /* ✅ 1. 교재별 페이지 범위 가져오기 */
   const rangeRes = await fetch(
