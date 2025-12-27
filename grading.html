@@ -25,29 +25,33 @@
     </div>
   </div>
 <script>
-const API_URL = "https://grading-server-production.up.railway.app/questions";
+const API_BASE = "https://grading-server-production.up.railway.app";
 const MIN_PAGE = 7;      // 첫 쪽 번호
 const MAX_PAGE = 167;    // 마지막 쪽 번호
 
 let wrongNumbers = [];
 
-function renderNavButtons(page) {
+function renderNavButtons(page, workbook) {
   page = Number(page);
-  const prevBtn = (page > MIN_PAGE)
-    ? `<button class="nav-btn" onclick="location.href='grading.html?page=${page - 1}'">⬅ 이전 쪽으로</button>`
-    : "";
-  const nextBtn = (page < MAX_PAGE)
-    ? `<button class="nav-btn" onclick="location.href='grading.html?page=${page + 1}'">다음 쪽으로 ➡</button>`
-    : "";
-  const backBtn = `<button class="back-btn" onclick="location.href='workbook-pages.html'">쪽 선택으로</button>`;
 
-  const html = `
-    <div class="nav-group">
-      ${prevBtn}
-      ${backBtn}
-      ${nextBtn}
-    </div>`;
-  return html;
+  const prevBtn = (page > MIN_PAGE)
+    ? `<button class="nav-btn"
+        onclick="location.href='grading.html?workbook=${encodeURIComponent(workbook)}&page=${page - 1}'">
+        ⬅ 이전 쪽으로</button>`
+    : "";
+
+  const nextBtn = (page < MAX_PAGE)
+    ? `<button class="nav-btn"
+        onclick="location.href='grading.html?workbook=${encodeURIComponent(workbook)}&page=${page + 1}'">
+        다음 쪽으로 ➡</button>`
+    : "";
+
+  const backBtn =
+    `<button class="back-btn"
+      onclick="location.href='workbook-pages.html'">
+      쪽 선택으로</button>`;
+
+  return `<div class="nav-group">${prevBtn}${backBtn}${nextBtn}</div>`;
 }
 /* ───────────── 공통 정규화 ───────────── */
 function normalize(s){
@@ -286,20 +290,21 @@ function gradeSystemEquationAsMultiset(correct, inputs){
 document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const page = params.get("page");
+  const workbook = params.get("workbook") || localStorage.getItem("workbook");
   const container = document.getElementById("question-container");
   const title = document.getElementById("page-title");
-  if (!page) {
+ if (!page || !workbook) {
     container.innerHTML = "<p>❌ 잘못된 접근입니다.</p>";
     return;
   }
   title.textContent = `📘 ${page}쪽 채점`;
 
   // 상단·하단 버튼 렌더링
-  document.querySelector(".top-buttons").innerHTML = renderNavButtons(page);
-  document.querySelector(".bottom-buttons .nav-buttons").innerHTML = renderNavButtons(page);
+  document.querySelector(".top-buttons").innerHTML = renderNavButtons(page, workbook);
+  document.querySelector(".bottom-buttons .nav-buttons").innerHTML = renderNavButtons(page,workbook);
 
   try{
-    const res = await fetch(`${API_URL}?page=${page}`);
+    const res = await fetch(`${API_BASE}/questions?workbook=${encodeURIComponent(workbook)}&page=${page}`);
     const data = await res.json();
     const questions = Object.entries(data)
       .filter(([_, q]) => q.page == page)
