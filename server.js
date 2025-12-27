@@ -80,5 +80,28 @@ app.get("/pages", async (req, res) => {
     res.status(500).json({ error: "DB error" });
   }
 });
+app.get("/page-range", async (req, res) => {
+  const { workbook } = req.query;
+  if (!workbook) {
+    return res.status(400).json({ error: "workbook is required" });
+  }
+
+  try {
+    const [[row]] = await db.query(
+      `SELECT MIN(page) AS minPage, MAX(page) AS maxPage
+       FROM grading_data
+       WHERE workbook = ?`,
+      [workbook]
+    );
+
+    res.json({
+      minPage: row.minPage,
+      maxPage: row.maxPage
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "DB error" });
+  }
+});
 
 app.listen(3000, () => console.log("🚀 Server running on 3000"));
