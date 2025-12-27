@@ -230,8 +230,12 @@ function chooseWorkbook(name){
   localStorage.setItem("workbook", name);
 
   if(name === "공통수학1 RPM"){
-    location.href = "gongsu1-rpm-pages.html"; // ✅ 선택 즉시 이동
-  } else {
+    location.href = "workbook-pages.html"; // ✅ 선택 즉시 이동
+  }
+  else if(name === "공통수학2 부교재") {
+    location.href = "workbook-pages.html"; // ✅ 선택 즉시 이동
+  } 
+  else {
     alert("교재 선택 완료: " + name);
     closeModal();
   }

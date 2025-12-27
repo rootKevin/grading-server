@@ -29,11 +29,6 @@ app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
-/* ───────────── 3. 공통수학1 RPM 쪽 선택 페이지 ───────────── */
-app.get("/rpm/common1/pages", (req, res) => {
-  res.sendFile(path.join(__dirname, "gongsu1-rpm-pages.html"));
-});
-
 /* ───────────── 4. 특정 page의 문제 가져오기 (채점용 데이터 API) ───────────── */
 app.get("/questions", async (req, res) => {
   const page = req.query.page;
@@ -41,8 +36,8 @@ app.get("/questions", async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      "SELECT * FROM grading_data_RPM_GongSu1 WHERE page = ? ORDER BY question_no ASC",
-      [page]
+      "SELECT * FROM grading_data WHERE workbook? AND page = ? ORDER BY question_number ASC",
+      [workbook, page]
     );
 
     const result = {};
@@ -67,11 +62,17 @@ app.get("/questions", async (req, res) => {
   }
 });
 
-/* ───────────── 5. 교재 전체 page 목록 불러오기 API ───────────── */
+/* ───────────── 1) 교재별 page 목록 ─────────────
+   GET /pages?workbook=공통수학1%20RPM
+*/
 app.get("/pages", async (req, res) => {
+  const workbook = req.query.workbook;
+  if (!workbook) return res.status(400).json({ error: "workbook is required" });
+
   try {
     const [rows] = await db.query(
-      "SELECT DISTINCT page FROM grading_data_RPM_GongSu1 ORDER BY page ASC"
+      "SELECT DISTINCT page FROM grading_data WHERE workbook = ? ORDER BY page ASC",
+      [workbook]
     );
     res.json(rows.map(r => r.page));
   } catch (err) {
