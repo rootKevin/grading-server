@@ -53,12 +53,7 @@ function renderNavButtons(page, workbook) {
         다음 쪽으로 ➡</button>`
     : "";
 
-  const backBtn =
-    `<button class="back-btn"
-      onclick="location.href='workbook-pages.html'">
-      쪽 선택으로</button>`;
-
-  return `<div class="nav-group">${prevBtn}${backBtn}${nextBtn}</div>`;
+  return `<div class="nav-group">${prevBtn}${nextBtn}</div>`;
 }
 /* ───────────── 공통 정규화 ───────────── */
 function normalize(s){
@@ -687,6 +682,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.innerHTML="<p style='color:red;'>데이터를 불러오지 못했습니다.</p>";
   }
 });
+function logout(){
+  localStorage.removeItem("workbook");
+  alert("로그아웃 되었습니다.");
+  location.href = "login.html";
+}
 
 </script>
 </body>
