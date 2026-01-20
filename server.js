@@ -111,5 +111,15 @@ app.get("/page-range", async (req, res) => {
     res.status(500).json({ error: "DB error" });
   }
 });
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body; // ✅ 평문 수신
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "username/password required" });
+  }
+
+  // 다음 단계: DB에서 password_hash 가져와 bcrypt.compare로 검증
+  return res.json({ ok: true, received: { username } }); // 테스트용
+});
 
 app.listen(3000, () => console.log("🚀 Server running on 3000"));

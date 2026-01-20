@@ -152,10 +152,36 @@
   </div>
 
   <script>
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
-      // TODO: 나중에 실제 로그인 검증 로직을 여기에 추가
-      window.location.href = "dashboard.html"; // 기존 쪽 선택 페이지로 이동
+      
+      const username = document.getElementById("login-id").value.trim();
+      const password = document.getElementById("login-pw").value;
+
+      if(!username || !password) {
+        alert("아이디/비밀번호를 입력하세요.");
+        return false;
+      }
+
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type" : "application/json"},
+        body: JSON.stringify({ username, password})
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert("로그인 실패: " + (data?.error || "unknown"));
+        return false;
+      }
+
+      // 로그인 성공 시 필요한 값 저장
+      localStorage.setItem("userId", data.user.id);
+      localStorage.setItem("userName", data.user.name);
+      localStorage.setItem("role", data.user.role);
+
+      location.href = "dashboard.html";
       return false;
     }
   </script>
