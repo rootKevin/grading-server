@@ -113,6 +113,8 @@ app.get("/page-range", async (req, res) => {
     res.status(500).json({ error: "DB error" });
   }
 });
+app.get("/health", (req, res) => res.status(200).send("ok"));
+
 app.post("/login", async (req, res) => {
   const { username, password } = req.body; // ✅ 평문 수신
 
