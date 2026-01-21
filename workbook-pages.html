@@ -55,9 +55,14 @@ if (!workbook) {
 
 /* 로그아웃 처리 */
 function logout(){
+  localStorage.removeItem("workbook");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("role");
   alert("로그아웃 되었습니다.");
-  location.href="/";
+  location.href = "login.html";
 }
+
 </script>
 <script src="script.js"></script>
 </body>

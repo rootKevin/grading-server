@@ -701,9 +701,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 function logout(){
   localStorage.removeItem("workbook");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("role");
   alert("로그아웃 되었습니다.");
   location.href = "login.html";
 }
+
 
 </script>
 </body>

@@ -262,9 +262,14 @@ function chooseWorkbook(name){
 
 // 이후 index.html 진입 시, localStorage.getItem("workbook") 으로 교재 기준 분기 가능
 function logout(){
+  localStorage.removeItem("workbook");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("role");
   alert("로그아웃 되었습니다.");
-  location.href="login.html";
+  location.href = "login.html";
 }
+
 </script>
 </body>
 </html>
