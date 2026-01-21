@@ -3,11 +3,13 @@ import cors from "cors";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import path from "path";
+import bcrypt from "bcryptjs";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(process.cwd()));
 
 // MySQL 연결 (Railway Primary DB)
 const db = mysql.createPool({
@@ -118,8 +120,48 @@ app.post("/login", async (req, res) => {
     return res.status(400).json({ error: "username/password required" });
   }
 
-  // 다음 단계: DB에서 password_hash 가져와 bcrypt.compare로 검증
-  return res.json({ ok: true, received: { username } }); // 테스트용
+  try {
+    const [rows] = await db.query(
+      `SELECT id, username, name, role, password_hash, is_active
+       FROM users
+       WHERE username = ?
+       LIMIT 1`,
+      [username]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: "invalid_credentials" });
+    }
+
+    const user = rows[0];
+
+    if (!user.is_active) {
+      return res.status(403).json({ error: "inactive_user" });
+    }
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) {
+      return res.status(401).json({ error: "invalid_credentials" });
+    }
+
+    // ✅ 마지막 로그인 시각 업데이트
+    await db.query(`UPDATE users SET last_login_at = NOW() WHERE id = ?`, [user.id]);
+
+    // ✅ 프론트에 필요한 최소 정보만 반환
+    return res.json({
+      ok: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "db_error" });
+  }
 });
 
-app.listen(3000, () => console.log("🚀 Server running on 3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("🚀 Server running on", PORT));
