@@ -163,10 +163,13 @@
         return false;
       }
 
-      const res = await fetch("/login", {
+      const API_BASE = "https://grading-server-production.up.railway.app";
+      // const API_BASE = "http://localhost:3000"; // 로컬 테스트용
+
+      const res = await fetch(`${API_BASE}/login`, {
         method: "POST",
-        headers: { "Content-Type" : "application/json"},
-        body: JSON.stringify({ username, password})
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
       });
 
       const data = await res.json();
