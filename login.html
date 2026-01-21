@@ -151,42 +151,44 @@
     </div>
   </div>
 
-  <script>
-    async function handleLogin(e) {
-      e.preventDefault();
-      
-      const username = document.getElementById("login-id").value.trim();
-      const password = document.getElementById("login-pw").value;
+<script>
+  const API_BASE = "https://grading-server-production.up.railway.app";
 
-      if(!username || !password) {
-        alert("아이디/비밀번호를 입력하세요.");
-        return false;
-      }
+  async function handleLogin(e) {
+    e.preventDefault();
 
-      const API_BASE = "https://grading-server-production.up.railway.app";
-      // const API_BASE = "http://localhost:3000"; // 로컬 테스트용
+    const username = document.getElementById("login-id").value.trim();
+    const password = document.getElementById("login-pw").value; // 평문 전송
 
-      const res = await fetch(`${API_BASE}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert("로그인 실패: " + (data?.error || "unknown"));
-        return false;
-      }
-
-      // 로그인 성공 시 필요한 값 저장
-      localStorage.setItem("userId", data.user.id);
-      localStorage.setItem("userName", data.user.name);
-      localStorage.setItem("role", data.user.role);
-
-      location.href = "dashboard.html";
+    if (!username || !password) {
+      alert("아이디/비밀번호를 입력하세요.");
       return false;
     }
-  </script>
+
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    // ✅ 응답이 JSON 아닐 때 대비
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+
+    if (!res.ok) {
+      alert("로그인 실패: " + (data?.error || `HTTP ${res.status}`));
+      return false;
+    }
+
+    localStorage.setItem("userId", data.user.id);
+    localStorage.setItem("userName", data.user.name);
+    localStorage.setItem("role", data.user.role);
+
+    // ✅ 교재 선택은 다음 단계에서 붙임
+    location.href = "dashboard.html";
+    return false;
+  }
+</script>
+
 </body>
 </html>
