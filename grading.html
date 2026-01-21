@@ -13,7 +13,15 @@
     <a href="dashboard.html">🏠 홈</a>
     <a href="workbook-pages.html">📘 쪽 선택</a>
 
-    <div class="user-name">👤 양지우</div>
+    <div class="user-name" id="user-name">👤 </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const name = localStorage.getItem("userName") || "사용자";
+      const el = document.getElementById("user-name");
+      if (el) el.textContent = `👤 ${name}`;
+    });
+    </script>
+
     <button class="logout-btn" onclick="logout()">🚪 로그아웃</button>
   </nav>
   <div class="container">
