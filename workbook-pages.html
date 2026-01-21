@@ -26,7 +26,15 @@
     <p>📡 데이터를 불러오는 중입니다...</p>
   </div>
 </div>
-
+<script>
+(function requireLogin() {
+  const userId = localStorage.getItem("userId");
+  if (!userId) {
+    alert("로그인이 필요합니다.");
+    location.href = "login.html";
+  }
+})();
+</script>
 <script>
 /* 교재 이름 반영 (Batch import는 이미 성공하셨으므로 값만 불러옴) */
 const workbook = localStorage.getItem("workbook");
@@ -42,7 +50,6 @@ function logout(){
   location.href="/";
 }
 </script>
-
 <script src="script.js"></script>
 </body>
 </html>

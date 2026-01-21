@@ -32,6 +32,15 @@
     </div>
   </div>
 <script>
+(function requireLogin() {
+  const userId = localStorage.getItem("userId");
+  if (!userId) {
+    alert("로그인이 필요합니다.");
+    location.href = "login.html";
+  }
+})();
+</script>
+<script>
 const API_BASE = "https://grading-server-production.up.railway.app";
 let MIN_PAGE = null;
 let MAX_PAGE = null;

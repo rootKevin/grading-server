@@ -219,6 +219,15 @@
     <button class="close-btn" onclick="closeModal()">닫기</button>
   </div>
 </div>
+<script>
+(function requireLogin() {
+  const userId = localStorage.getItem("userId");
+  if (!userId) {
+    alert("로그인이 필요합니다.");
+    location.href = "login.html";
+  }
+})();
+</script>
 
 <script>
 function openModal(){
@@ -249,6 +258,5 @@ function logout(){
   location.href="login.html";
 }
 </script>
-
 </body>
 </html>
