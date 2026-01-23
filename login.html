@@ -142,18 +142,13 @@
 
         <button type="submit" class="login-btn">로그인</button>
       </form>
-
       <p class="login-hint">
-        ※ 현재는 테스트 단계라<br />
-        아이디/비밀번호를 검증하지 않고<br />
-        바로 쪽 선택 화면으로 이동합니다.
+        ※ 아이디/비밀번호를 입력 후 로그인하세요.
       </p>
     </div>
   </div>
 
 <script>
-  const API_BASE = "https://grading-server-production.up.railway.app";
-
   async function handleLogin(e) {
     e.preventDefault();
 
@@ -165,13 +160,22 @@
       return false;
     }
 
-    const res = await fetch(`${API_BASE}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
+    // ✅ 현재 페이지가 Railway(또는 서버)에서 열려있어야 /login이 같은 서버로 감
+    const API_BASE = window.location.origin;
 
-    // ✅ 응답이 JSON 아닐 때 대비
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+    } catch (err) {
+      console.error(err);
+      alert("서버에 연결할 수 없어요. Railway 주소로 접속했는지 확인해줘.");
+      return false;
+    }
+
     let data = null;
     try { data = await res.json(); } catch (_) {}
 
@@ -180,15 +184,18 @@
       return false;
     }
 
+    // ✅ 로그인 정보 저장
     localStorage.setItem("userId", data.user.id);
     localStorage.setItem("userName", data.user.name);
     localStorage.setItem("role", data.user.role);
 
-    // ✅ 교재 선택은 다음 단계에서 붙임
-    location.href = "dashboard.html";
+    // ✅ 대시보드로 이동 (둘 다 가능)
+    // location.href = "dashboard.html";
+    location.href = "/dashboard";
     return false;
   }
 </script>
+
 
 </body>
 </html>
