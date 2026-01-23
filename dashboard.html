@@ -219,7 +219,7 @@
       <button class="workbook-btn" onclick="chooseWorkbook('공통수학1 RPM')">📘 공통수학1 RPM</button>
       <button class="workbook-btn" onclick="chooseWorkbook('공통수학1 마플시너지')">📘 공통수학1 마플시너지</button>
       <button class="workbook-btn" onclick="chooseWorkbook('공통수학2 부교재')">📗 공통수학2 부교재</button>
-      <button class="workbook-btn" onclick="chooseWorkbook('공통수학2 부교재')">📗 공통수학2 RPM</button>
+      <button class="workbook-btn" onclick="chooseWorkbook('공통수학2 RPM')">📗 공통수학2 RPM</button>
       <button class="workbook-btn" onclick="chooseWorkbook('고급수학 RPM')">📙 고급수학 RPM</button>
 
     </div>
@@ -244,22 +244,10 @@ function openModal(){
 function closeModal(){
   document.getElementById("modal-bg").style.display="none";
 }
-/* 교재 선택 + 저장 + 공통수학1이면 페이지 선택기로 이동 */
 function chooseWorkbook(name){
   localStorage.setItem("workbook", name);
-
-  if(name === "공통수학1 RPM"){
-    location.href = "workbook-pages.html"; // ✅ 선택 즉시 이동
-  }
-  else if(name === "공통수학2 부교재") {
-    location.href = "workbook-pages.html"; // ✅ 선택 즉시 이동
-  } 
-  else {
-    alert("교재 선택 완료: " + name);
-    closeModal();
-  }
+  location.href = "workbook-pages.html";
 }
-
 // 이후 index.html 진입 시, localStorage.getItem("workbook") 으로 교재 기준 분기 가능
 function logout(){
   localStorage.removeItem("workbook");
@@ -269,7 +257,6 @@ function logout(){
   alert("로그아웃 되었습니다.");
   location.href = "login.html";
 }
-
 </script>
 </body>
 </html>
