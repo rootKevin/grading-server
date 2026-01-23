@@ -214,16 +214,9 @@
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <h2>📘 교재를 선택하세요</h2>
-    <div class="workbooks">
-
-      <button class="workbook-btn" onclick="chooseWorkbook('공통수학1 RPM')">📘 공통수학1 RPM</button>
-      <button class="workbook-btn" onclick="chooseWorkbook('공통수학1 마플시너지')">📘 공통수학1 마플시너지</button>
-      <button class="workbook-btn" onclick="chooseWorkbook('공통수학2 부교재')">📗 공통수학2 부교재</button>
-      <button class="workbook-btn" onclick="chooseWorkbook('공통수학2 RPM')">📗 공통수학2 RPM</button>
-      <button class="workbook-btn" onclick="chooseWorkbook('고급수학 RPM')">📙 고급수학 RPM</button>
-
+    <div class="workbooks" id="workbook-list">
+      <div style="text-align:center; color:#666; font-size:13px;">교재 목록을 불러오는 중...</div>
     </div>
-
     <button class="close-btn" onclick="closeModal()">닫기</button>
   </div>
 </div>
@@ -238,8 +231,44 @@
 </script>
 
 <script>
-function openModal(){
+async function openModal(){
   document.getElementById("modal-bg").style.display="flex";
+
+  const listEl = document.getElementById("workbook-list");
+  const userId = localStorage.getItem("userId");
+  const API_BASE = window.location.origin;
+
+  if (!userId) {
+    listEl.innerHTML = `<div style="text-align:center; color:red; font-size:13px;">로그인이 필요합니다.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = `<div style="text-align:center; color:#666; font-size:13px;">교재 목록을 불러오는 중...</div>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/my-workbooks?userId=${encodeURIComponent(userId)}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      listEl.innerHTML = `<div style="text-align:center; color:red; font-size:13px;">불러오기 실패: ${data?.error || res.status}</div>`;
+      return;
+    }
+
+    if (!data.length) {
+      listEl.innerHTML = `<div style="text-align:center; color:#666; font-size:13px;">배정된 교재가 없습니다. (선생님에게 문의)</div>`;
+      return;
+    }
+
+    listEl.innerHTML = data.map(w => `
+      <button class="workbook-btn" onclick="chooseWorkbook('${w.title.replace(/'/g, "\\'")}')">
+        📘 ${w.title}
+      </button>
+    `).join("");
+
+  } catch (e) {
+    console.error(e);
+    listEl.innerHTML = `<div style="text-align:center; color:red; font-size:13px;">서버 연결 실패</div>`;
+  }
 }
 function closeModal(){
   document.getElementById("modal-bg").style.display="none";
