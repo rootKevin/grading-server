@@ -117,7 +117,29 @@ app.get("/page-range", async (req, res) => {
     res.status(500).json({ error: "DB error" });
   }
 });
-app.get("/health", (req, res) => res.status(200).send("ok"));
+// ✅ 로그인한 사용자가 선택 가능한 교재 목록
+// GET /my-workbooks?userId=123
+app.get("/my-workbooks", async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: "userId is required" });
+
+  try {
+    const [rows] = await db.query(
+      `SELECT w.id, w.code, w.title, w.min_page, w.max_page
+       FROM user_workbooks uw
+       JOIN workbooks w ON w.id = uw.workbook_id
+       WHERE uw.user_id = ?
+         AND w.is_active = 1
+       ORDER BY w.title ASC`,
+      [userId]
+    );
+
+    return res.json(rows);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "db_error" });
+  }
+});
 
 app.post("/login", async (req, res) => {
   const { username, password } = req.body; // ✅ 평문 수신
