@@ -354,12 +354,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       *********************************************************/
       if(type==="단답형") {
-        if(option1 === "단항식") {
-          inputHTML=`<input type="text" class="answer-input" />`;
-        }
-        else {
-          inputHTML=`<input type="text" class="answer-input disabled" value="채점 불가능 유형" disabled />`;
-        }
+        inputHTML=`<input type="text" class="answer-input" />`;
       }
       /* ⑧ 객관식 / 복수형 */
       else if(type==="객관식"){
@@ -378,7 +373,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       
       /* 행렬 */
-      /*********************** 채점 불가 ***********************
       else if(type==="행렬"){
         const matrix = parseMatrixToGrid(ans);
         const rows = matrix.length;
@@ -395,27 +389,22 @@ document.addEventListener("DOMContentLoaded", async () => {
             `).join("")}
           </div>`;
       }
-      *********************************************************/
       /* ② 기본 변수 대입형 */
-      /*********************** 채점 불가 ***********************
+
       else if(type==="변수 대입형"){
         const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
         inputHTML=`<div class="sub-group"><div class="var-inputs">${
           labels.map(l=>`<div class="sub-input"><label>${l}</label><div class="formula-input"><input type="text" class="var-basic" data-key="${l}" /><div class="math-preview">입력한 수식</div></div></div>`).join("")
         }</div></div>`;
       }
-      *********************************************************/
       /* ③ 변수 대입형(연립방정식) */
-      /*********************** 채점 불가 ***********************
       else if(type==="변수 대입형(연립방정식)"){
         const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
         inputHTML=`<div class="sub-group"><div class="var-inputs">${
           labels.map(l=>`<div class="sub-input"><label>${l}</label><div class="formula-input"><input type="text" class="var-system" data-key="${l}" /><div class="math-preview">입력한 수식</div></div></div>`).join("")
         }</div></div>`;
       }
-      *********************************************************/
       /* ④ 변수 대입형(방정식)(n개) */
-      /*********************** 채점 불가 ***********************
       else if(/^변수\s*대입형\(방정식\)\(\d+개\)$/.test(type)){
         const n=parseInt(type.match(/\((\d+)개\)/)[1]);
         const baseLabels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
@@ -425,18 +414,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           Array.from({length:n}).map(()=>`<div class="formula-input"><input type="text" class="extra-eq" /><div class="math-preview">입력한 수식</div></div>`).join("") +
           `</div>`;
       }
-      *********************************************************/
       /* ⑤ 변수 대입형(방정식) */
-      /*********************** 채점 불가 ***********************
       else if(type==="변수 대입형(방정식)"){
         const labels=[...ans.matchAll(/([a-zA-Z가-힣]+)\s*=/g)].map(m=>m[1]);
         inputHTML=`<div class="sub-group"><div class="var-inputs">${
           labels.map(l=>`<div class="sub-input"><label>${l}</label><div class="formula-input"><input type="text" class="var-eq" data-key="${l}" /><div class="math-preview">입력한 수식</div></div></div>`).join("")
         }</div></div>`;
       }
-      *********************************************************/
       /* ⑦ 소문항형 */
-      /*********************** 채점 불가 ***********************
       else if(/\(\d+\)|\([가-사]\)/.test(ans)){
         const tokens = ans.match(/\((\d+|[가-사])\)/g) || [];
         // ✅ 소문항 라벨 + 입력칸 묶음 구조 적용
@@ -454,9 +439,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
         `;
       }
-      *********************************************************/
       else{
-        inputHTML=`<input type="text" class="answer-input disabled" value="채점 불가능 유형" disabled />`;
+        inputHTML=`<input type="text" class="answer-input" />`;   
       }   
       // --- 입력칸 생성 이후 ---
       if(!["객관식","객관식(복수형)"].includes(type)){
@@ -490,11 +474,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       const norm=normalize;
       // --- 단답형 채점
       if(type === "단답형"){
-        if(option1 === "단항식") {
-          const user = normalize(card.querySelector(".answer-input")?.value.trim() || "");
-          const corr = normalize(correct);
-          return (user === corr) ? pass() : fail();          
-        }
+        const user = normalize(card.querySelector(".answer-input")?.value.trim() || "");
+        const corr = normalize(correct);
+        return (user === corr) ? pass() : fail();          
       }
       // --- 행렬 채점
       if(type==="행렬"){
@@ -638,6 +620,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         return (user===norm(correct))?pass():fail();
       }
 
+      // --- 알 수 없는 유형은 기본 단답형처럼 정규화 비교
+      const fallbackInput = card.querySelector(".answer-input");
+      if(fallbackInput){
+        const user = norm(fallbackInput.value.trim() || "");
+        const corr = norm(correct);
+        return (user === corr) ? pass() : fail();
+      }
+      
       result.textContent="채점 불가능";
       result.className="result-inline";
       return;
