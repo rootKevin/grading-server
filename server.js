@@ -302,6 +302,83 @@ app.post("/login", async (req, res) => {
     return res.status(500).json({ error: "db_error" });
   }
 });
+// =====================================================
+// Academy App APIs - 수업일지 / 페널티 / 설문 관리
+// =====================================================
+
+// 반 목록 불러오기
+app.get("/academy/classes", async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        id,
+        name,
+        grade,
+        schedule_name,
+        is_active
+      FROM academy_class_groups
+      WHERE is_active = 1
+      ORDER BY id
+    `);
+
+    res.json({
+      ok: true,
+      classes: rows,
+    });
+  } catch (err) {
+    console.error("❌ /academy/classes error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "반 목록을 불러오지 못했습니다.",
+    });
+  }
+});
+
+
+// 특정 반의 학생 목록 불러오기
+app.get("/academy/classes/:classId/students", async (req, res) => {
+  try {
+    const classId = Number(req.params.classId);
+
+    if (!classId) {
+      return res.status(400).json({
+        ok: false,
+        message: "classId가 올바르지 않습니다.",
+      });
+    }
+
+    const [rows] = await pool.query(
+      `
+      SELECT
+        s.id,
+        s.name,
+        s.school_name,
+        s.grade,
+        s.gender,
+        s.is_active
+      FROM academy_class_students cs
+      JOIN academy_students s ON cs.student_id = s.id
+      WHERE cs.class_group_id = ?
+        AND cs.is_active = 1
+        AND s.is_active = 1
+      ORDER BY s.name
+      `,
+      [classId]
+    );
+
+    res.json({
+      ok: true,
+      classId,
+      students: rows,
+    });
+  } catch (err) {
+    console.error("❌ /academy/classes/:classId/students error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "학생 목록을 불러오지 못했습니다.",
+    });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
