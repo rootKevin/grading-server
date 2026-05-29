@@ -381,6 +381,27 @@ app.get("/academy/classes/:classId/students", async (req, res) => {
     });
   }
 });
+app.get("/academy/db-test", async (req, res) => {
+  try {
+    const [dbRows] = await pool.query("SELECT DATABASE() AS dbName");
+    const [tableRows] = await pool.query("SHOW TABLES LIKE 'academy_%'");
+
+    res.json({
+      ok: true,
+      database: dbRows[0].dbName,
+      tables: tableRows,
+    });
+  } catch (err) {
+    console.error("❌ /academy/db-test error:", err);
+
+    res.status(500).json({
+      ok: false,
+      message: "DB 테스트 실패",
+      error: err.message,
+    });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
