@@ -330,6 +330,7 @@ app.get("/academy/classes", async (req, res) => {
     res.status(500).json({
       ok: false,
       message: "반 목록을 불러오지 못했습니다.",
+      error: err.message,
     });
   }
 });
@@ -376,6 +377,7 @@ app.get("/academy/classes/:classId/students", async (req, res) => {
     res.status(500).json({
       ok: false,
       message: "학생 목록을 불러오지 못했습니다.",
+      error: err.message,
     });
   }
 });
