@@ -309,7 +309,7 @@ app.post("/login", async (req, res) => {
 // 반 목록 불러오기
 app.get("/academy/classes", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    const [rows] = await db.query(`
       SELECT 
         id,
         name,
@@ -348,7 +348,7 @@ app.get("/academy/classes/:classId/students", async (req, res) => {
       });
     }
 
-    const [rows] = await pool.query(
+    const [rows] = await db.query(
       `
       SELECT
         s.id,
@@ -383,8 +383,8 @@ app.get("/academy/classes/:classId/students", async (req, res) => {
 });
 app.get("/academy/db-test", async (req, res) => {
   try {
-    const [dbRows] = await pool.query("SELECT DATABASE() AS dbName");
-    const [tableRows] = await pool.query("SHOW TABLES LIKE 'academy_%'");
+    const [dbRows] = await db.query("SELECT DATABASE() AS dbName");
+    const [tableRows] = await db.query("SHOW TABLES LIKE 'academy_%'");
 
     res.json({
       ok: true,
