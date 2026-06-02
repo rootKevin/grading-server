@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v0.001 (수업일지 조회 전용 화면 최초 생성) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수업일지 조회</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6fb;
+      color: #222;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .load-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      padding: 10px 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .load-box input {
+      width: 90px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .session-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .info-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .notice {
+      white-space: pre-line;
+      line-height: 1.6;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      padding: 14px;
+      border-radius: 12px;
+      margin-top: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 11px 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .student-name {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .homework-text,
+    .memo-text {
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .badge-red {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .badge-blue {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge-green {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .empty {
+      color: #aaa;
+    }
+
+    .loading,
+    .error {
+      padding: 18px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+    }
+
+    .loading {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #b91c1c;
+      white-space: pre-line;
+    }
+
+    @media (max-width: 800px) {
+      .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="top-bar">
+      <h1>📘 수업일지 조회</h1>
+
+      <div class="load-box">
+        <span>sessionId</span>
+        <input id="sessionIdInput" type="number" value="1" min="1" />
+        <button id="loadBtn">불러오기</button>
+      </div>
+    </div>
+
+    <div id="status"></div>
+
+    <section class="card" id="sessionCard" style="display: none;">
+      <div class="card-title">🗓 수업 기본정보</div>
+      <div class="session-title" id="sessionTitle"></div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">반</div>
+          <div class="value" id="className"></div>
+        </div>
+
+        <div class="info-item">
+          <div class="label">수업일</div>
+          <div class="value" id="sessionDate"></div>
+        </div>
+
+        <div class="info-item">
+          <div class="label">수업 유형</div>
+          <div class="value" id="sessionType"></div>
+        </div>
+
+        <div class="info-item">
+          <div class="label">sessionId</div>
+          <div class="value" id="sessionId"></div>
+        </div>
+      </div>
+
+      <div class="notice" id="noticeBox"></div>
+    </section>
+
+    <section class="card" id="homeworkCard" style="display: none;">
+      <div class="card-title">📚 공통숙제</div>
+      <table>
+        <thead>
+          <tr>
+            <th>대상</th>
+            <th>교재</th>
+            <th>범위</th>
+            <th>문제 수</th>
+            <th>메모</th>
+          </tr>
+        </thead>
+        <tbody id="homeworkBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card" id="studentCard" style="display: none;">
+      <div class="card-title">👩‍🏫 학생별 기록</div>
+      <table>
+        <thead>
+          <tr>
+            <th>학생</th>
+            <th>출결</th>
+            <th>설문</th>
+            <th>지각</th>
+            <th>숙제</th>
+            <th>풀이노트</th>
+            <th>개별숙제</th>
+            <th>메모</th>
+          </tr>
+        </thead>
+        <tbody id="studentBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card" id="penaltyCard" style="display: none;">
+      <div class="card-title">⚠️ 페널티</div>
+      <table>
+        <thead>
+          <tr>
+            <th>학생</th>
+            <th>사유</th>
+            <th>점수</th>
+            <th>생성방식</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="penaltyBody"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE =
+      location.hostname === "localhost" || location.hostname === "127.0.0.1"
+        ? "https://grading-server-production.up.railway.app"
+        : location.origin;
+
+    const statusEl = document.getElementById("status");
+
+    const sessionCard = document.getElementById("sessionCard");
+    const homeworkCard = document.getElementById("homeworkCard");
+    const studentCard = document.getElementById("studentCard");
+    const penaltyCard = document.getElementById("penaltyCard");
+
+    const sessionIdInput = document.getElementById("sessionIdInput");
+    const loadBtn = document.getElementById("loadBtn");
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      return String(value).slice(0, 10);
+    }
+
+    function showLoading(message) {
+      statusEl.innerHTML = `<div class="loading">${escapeHtml(message)}</div>`;
+    }
+
+    function showError(message) {
+      statusEl.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+    }
+
+    function clearStatus() {
+      statusEl.innerHTML = "";
+    }
+
+    function emptyText(value) {
+      if (value === null || value === undefined || value === "") {
+        return `<span class="empty">-</span>`;
+      }
+      return escapeHtml(value);
+    }
+
+    function yesNoBadge(value, yesText, noText) {
+      if (Number(value) === 1) {
+        return `<span class="badge badge-red">${yesText}</span>`;
+      }
+      return `<span class="badge badge-green">${noText}</span>`;
+    }
+
+    function renderSession(session) {
+      document.getElementById("sessionTitle").textContent = session.title || "제목 없음";
+      document.getElementById("className").textContent = session.class_name || "-";
+      document.getElementById("sessionDate").textContent = formatDate(session.session_date);
+      document.getElementById("sessionType").textContent = session.session_type || "-";
+      document.getElementById("sessionId").textContent = session.id;
+      document.getElementById("noticeBox").textContent = session.notice || "공지 없음";
+
+      sessionCard.style.display = "block";
+    }
+
+    function renderCommonHomework(rows) {
+      const body = document.getElementById("homeworkBody");
+
+      if (!rows || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" class="empty">공통숙제가 없습니다.</td></tr>`;
+      } else {
+        body.innerHTML = rows
+          .map(row => `
+            <tr>
+              <td>${escapeHtml(row.target_name || row.target_type || "-")}</td>
+              <td>${emptyText(row.book_name)}</td>
+              <td>${emptyText(row.range_text)}</td>
+              <td>${emptyText(row.problem_count)}</td>
+              <td>${emptyText(row.memo)}</td>
+            </tr>
+          `)
+          .join("");
+      }
+
+      homeworkCard.style.display = "block";
+    }
+
+    function renderStudentRecords(rows) {
+      const body = document.getElementById("studentBody");
+
+      if (!rows || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="8" class="empty">학생 기록이 없습니다.</td></tr>`;
+      } else {
+        body.innerHTML = rows
+          .map(row => {
+            const lateText =
+              Number(row.late_minutes) > 0
+                ? `<span class="badge badge-red">${row.late_minutes}분</span>`
+                : `<span class="empty">-</span>`;
+
+            const homeworkBadges = [
+              Number(row.homework_incomplete) === 1
+                ? `<span class="badge badge-red">미완료</span>`
+                : "",
+              Number(row.homework_not_brought) === 1
+                ? `<span class="badge badge-red">안 가져옴</span>`
+                : ""
+            ].filter(Boolean).join(" ");
+
+            return `
+              <tr>
+                <td class="student-name">${escapeHtml(row.student_name)}</td>
+                <td><span class="badge badge-blue">${escapeHtml(row.attendance_status || "출석")}</span></td>
+                <td>${yesNoBadge(row.survey_missing, "미응답", "응답/해당없음")}</td>
+                <td>${lateText}</td>
+                <td>${homeworkBadges || `<span class="empty">-</span>`}</td>
+                <td>${yesNoBadge(row.note_missing, "없음", "확인")}</td>
+                <td class="homework-text">${emptyText(row.individual_homework)}</td>
+                <td class="memo-text">${emptyText(row.teacher_memo)}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      studentCard.style.display = "block";
+    }
+
+    function renderPenalties(rows) {
+      const body = document.getElementById("penaltyBody");
+
+      if (!rows || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" class="empty">페널티가 없습니다.</td></tr>`;
+      } else {
+        body.innerHTML = rows
+          .map(row => `
+            <tr>
+              <td class="student-name">${escapeHtml(row.student_name)}</td>
+              <td>${escapeHtml(row.reason)}</td>
+              <td><span class="badge badge-red">+${escapeHtml(row.points)}</span></td>
+              <td>${escapeHtml(row.source)}</td>
+              <td>${escapeHtml(row.status)}</td>
+            </tr>
+          `)
+          .join("");
+      }
+
+      penaltyCard.style.display = "block";
+    }
+
+    async function loadSession() {
+      const sessionId = Number(sessionIdInput.value);
+
+      if (!sessionId) {
+        showError("sessionId를 입력해주세요.");
+        return;
+      }
+
+      sessionCard.style.display = "none";
+      homeworkCard.style.display = "none";
+      studentCard.style.display = "none";
+      penaltyCard.style.display = "none";
+
+      showLoading("수업일지를 불러오는 중입니다...");
+
+      try {
+        const res = await fetch(`${API_BASE}/academy/sessions/${sessionId}`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || data.message || "수업일지를 불러오지 못했습니다.");
+        }
+
+        renderSession(data.session);
+        renderCommonHomework(data.commonHomework);
+        renderStudentRecords(data.studentRecords);
+        renderPenalties(data.penalties);
+
+        clearStatus();
+      } catch (err) {
+        console.error(err);
+        showError(err.message);
+      }
+    }
+
+    loadBtn.addEventListener("click", loadSession);
+
+    const params = new URLSearchParams(location.search);
+    const sessionIdFromUrl = params.get("sessionId");
+
+    if (sessionIdFromUrl) {
+      sessionIdInput.value = sessionIdFromUrl;
+    }
+
+    loadSession();
+  </script>
+</body>
+</html>
