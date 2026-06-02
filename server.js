@@ -401,6 +401,137 @@ app.get("/academy/db-test", async (req, res) => {
     });
   }
 });
+// 수업일지 1개 전체 불러오기
+app.get("/academy/sessions/:sessionId", async (req, res) => {
+  try {
+    const sessionId = Number(req.params.sessionId);
+
+    if (!sessionId) {
+      return res.status(400).json({
+        ok: false,
+        message: "sessionId가 올바르지 않습니다.",
+      });
+    }
+
+    // 1. 수업 기본정보
+    const [sessionRows] = await db.query(
+      `
+      SELECT
+        cs.id,
+        cs.class_group_id,
+        cg.name AS class_name,
+        cs.session_date,
+        cs.session_type,
+        cs.title,
+        cs.notice,
+        cs.memo,
+        cs.created_at
+      FROM academy_class_sessions cs
+      JOIN academy_class_groups cg ON cs.class_group_id = cg.id
+      WHERE cs.id = ?
+      `,
+      [sessionId]
+    );
+
+    if (sessionRows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: "해당 수업일지를 찾을 수 없습니다.",
+      });
+    }
+
+    const session = sessionRows[0];
+
+    // 2. 공통숙제
+    const [commonHomeworkRows] = await db.query(
+      `
+      SELECT
+        id,
+        target_type,
+        target_name,
+        book_name,
+        range_text,
+        problem_count,
+        memo,
+        sort_order
+      FROM academy_session_common_homework
+      WHERE session_id = ?
+      ORDER BY sort_order, id
+      `,
+      [sessionId]
+    );
+
+    // 3. 학생별 기록
+    const [studentRecordRows] = await db.query(
+      `
+      SELECT
+        r.id AS record_id,
+        s.id AS student_id,
+        s.name AS student_name,
+        s.school_name,
+        s.grade,
+        s.gender,
+
+        r.attendance_status,
+        r.survey_missing,
+        r.late_minutes,
+        r.late_penalty_points,
+        r.homework_incomplete,
+        r.homework_not_brought,
+        r.checkin_missing,
+        r.note_missing,
+        r.individual_homework,
+        r.teacher_memo
+      FROM academy_session_student_records r
+      JOIN academy_students s ON r.student_id = s.id
+      WHERE r.session_id = ?
+      ORDER BY s.name
+      `,
+      [sessionId]
+    );
+
+    // 4. 페널티 목록
+    const [penaltyRows] = await db.query(
+      `
+      SELECT
+        p.id,
+        p.student_id,
+        s.name AS student_name,
+        p.penalty_code,
+        p.reason,
+        p.points,
+        p.source,
+        p.memo,
+        p.status,
+        p.created_at
+      FROM academy_penalty_entries p
+      JOIN academy_students s ON p.student_id = s.id
+      WHERE p.session_id = ?
+      ORDER BY s.name, p.id
+      `,
+      [sessionId]
+    );
+
+    res.json({
+      ok: true,
+      session,
+      commonHomework: commonHomeworkRows,
+      studentRecords: studentRecordRows,
+      penalties: penaltyRows,
+    });
+  } catch (err) {
+    console.error("❌ /academy/sessions/:sessionId error:", err);
+
+    res.status(500).json({
+      ok: false,
+      message: "수업일지를 불러오지 못했습니다.",
+      error: err.message,
+    });
+  }
+});
+
+
+
 
 
 const PORT = process.env.PORT || 3000;
