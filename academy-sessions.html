@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v0.001 (수업일지 목록 조회 화면 최초 생성) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수업일지 목록</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6fb;
+      color: #222;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .filter-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      padding: 12px;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      flex-wrap: wrap;
+    }
+
+    input,
+    select {
+      padding: 9px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .summary-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .summary-value {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 800;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .title-cell {
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .badge-blue {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge-green {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge-red {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .view-link {
+      display: inline-block;
+      text-decoration: none;
+      background: #111827;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .view-link:hover {
+      background: #374151;
+    }
+
+    .loading,
+    .error {
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+    }
+
+    .loading {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #b91c1c;
+      white-space: pre-line;
+    }
+
+    .empty {
+      color: #999;
+      text-align: center;
+      padding: 28px;
+    }
+
+    @media (max-width: 850px) {
+      .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="top-bar">
+      <h1>📚 수업일지 목록</h1>
+
+      <div class="filter-box">
+        <input id="dateInput" type="date" />
+        <select id="classSelect">
+          <option value="">전체 반</option>
+        </select>
+        <button id="searchBtn">조회</button>
+        <button id="resetBtn" type="button">전체 보기</button>
+      </div>
+    </div>
+
+    <div id="status"></div>
+
+    <section class="summary">
+      <div class="summary-item">
+        <div class="summary-label">수업일지 수</div>
+        <div class="summary-value" id="totalSessions">0</div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-label">총 학생기록</div>
+        <div class="summary-value" id="totalStudentRecords">0</div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-label">총 페널티 건수</div>
+        <div class="summary-value" id="totalPenaltyCount">0</div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-label">총 페널티 점수</div>
+        <div class="summary-value" id="totalPenaltyPoints">0</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>수업일</th>
+            <th>반</th>
+            <th>유형</th>
+            <th>제목</th>
+            <th>공통숙제</th>
+            <th>학생기록</th>
+            <th>페널티</th>
+            <th>보기</th>
+          </tr>
+        </thead>
+        <tbody id="sessionBody">
+          <tr>
+            <td colspan="8" class="empty">불러오는 중...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE =
+      location.hostname === "localhost" || location.hostname === "127.0.0.1"
+        ? "https://grading-server-production.up.railway.app"
+        : location.origin;
+
+    const statusEl = document.getElementById("status");
+    const sessionBody = document.getElementById("sessionBody");
+
+    const dateInput = document.getElementById("dateInput");
+    const classSelect = document.getElementById("classSelect");
+    const searchBtn = document.getElementById("searchBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      return String(value).slice(0, 10);
+    }
+
+    function showLoading(message) {
+      statusEl.innerHTML = `<div class="loading">${escapeHtml(message)}</div>`;
+    }
+
+    function showError(message) {
+      statusEl.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+    }
+
+    function clearStatus() {
+      statusEl.innerHTML = "";
+    }
+
+    function setSummary(rows) {
+      const totalSessions = rows.length;
+      const totalStudentRecords = rows.reduce(
+        (sum, row) => sum + Number(row.student_record_count || 0),
+        0
+      );
+      const totalPenaltyCount = rows.reduce(
+        (sum, row) => sum + Number(row.penalty_count || 0),
+        0
+      );
+      const totalPenaltyPoints = rows.reduce(
+        (sum, row) => sum + Number(row.penalty_total || 0),
+        0
+      );
+
+      document.getElementById("totalSessions").textContent = totalSessions;
+      document.getElementById("totalStudentRecords").textContent = totalStudentRecords;
+      document.getElementById("totalPenaltyCount").textContent = totalPenaltyCount;
+      document.getElementById("totalPenaltyPoints").textContent = totalPenaltyPoints;
+    }
+
+    async function loadClasses() {
+      try {
+        const res = await fetch(`${API_BASE}/academy/classes`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || data.message || "반 목록을 불러오지 못했습니다.");
+        }
+
+        classSelect.innerHTML =
+          `<option value="">전체 반</option>` +
+          data.classes
+            .map(cls => `
+              <option value="${escapeHtml(cls.id)}">${escapeHtml(cls.name)}</option>
+            `)
+            .join("");
+      } catch (err) {
+        console.error(err);
+        showError(err.message);
+      }
+    }
+
+    async function loadSessions() {
+      showLoading("수업일지 목록을 불러오는 중입니다...");
+
+      try {
+        const params = new URLSearchParams();
+
+        if (dateInput.value) {
+          params.set("date", dateInput.value);
+        }
+
+        if (classSelect.value) {
+          params.set("classId", classSelect.value);
+        }
+
+        const queryString = params.toString();
+        const url = `${API_BASE}/academy/sessions${queryString ? `?${queryString}` : ""}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || data.message || "수업일지 목록을 불러오지 못했습니다.");
+        }
+
+        renderSessions(data.sessions || []);
+        setSummary(data.sessions || []);
+        clearStatus();
+      } catch (err) {
+        console.error(err);
+        showError(err.message);
+      }
+    }
+
+    function renderSessions(rows) {
+      if (!rows || rows.length === 0) {
+        sessionBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="empty">수업일지가 없습니다.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      sessionBody.innerHTML = rows
+        .map(row => {
+          const penaltyCount = Number(row.penalty_count || 0);
+          const penaltyTotal = Number(row.penalty_total || 0);
+
+          const penaltyBadge =
+            penaltyCount > 0
+              ? `<span class="badge badge-red">${penaltyCount}건 / +${penaltyTotal}</span>`
+              : `<span class="badge badge-green">없음</span>`;
+
+          return `
+            <tr>
+              <td>${escapeHtml(formatDate(row.session_date))}</td>
+              <td><span class="badge badge-blue">${escapeHtml(row.class_name)}</span></td>
+              <td>${escapeHtml(row.session_type || "-")}</td>
+              <td class="title-cell">${escapeHtml(row.title || "-")}</td>
+              <td>${escapeHtml(row.common_homework_count || 0)}개</td>
+              <td>${escapeHtml(row.student_record_count || 0)}명</td>
+              <td>${penaltyBadge}</td>
+              <td>
+                <a class="view-link" href="academy-session.html?sessionId=${escapeHtml(row.id)}">
+                  보기
+                </a>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    searchBtn.addEventListener("click", loadSessions);
+
+    resetBtn.addEventListener("click", () => {
+      dateInput.value = "";
+      classSelect.value = "";
+      loadSessions();
+    });
+
+    async function init() {
+      await loadClasses();
+      await loadSessions();
+    }
+
+    init();
+  </script>
+</body>
+</html>
