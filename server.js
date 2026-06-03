@@ -401,6 +401,7 @@ app.get("/academy/db-test", async (req, res) => {
     });
   }
 });
+
 // 수업일지 목록 불러오기
 app.get("/academy/sessions", async (req, res) => {
   try {
@@ -613,6 +614,10 @@ app.get("/academy/sessions/:sessionId", async (req, res) => {
     });
   }
 });
+
+
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
