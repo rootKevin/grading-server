@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <!-- v0.001 (수업일지 작성 화면 최초 생성) -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>수업일지 작성</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6fb;
+      color: #222;
+    }
+
+    .page {
+      max-width: 1250px;
+      margin: 0 auto;
+      padding: 32px 20px 70px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    a.button-link,
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 800;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    button:hover,
+    a.button-link:hover {
+      background: #1d4ed8;
+    }
+
+    .secondary {
+      background: #111827;
+    }
+
+    .secondary:hover {
+      background: #374151;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      color: #555;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+      font-family: inherit;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 800;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .student-name {
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .small-input {
+      width: 70px;
+    }
+
+    .checkbox-cell {
+      text-align: center;
+    }
+
+    .checkbox-cell input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .homework-input,
+    .memo-input {
+      min-width: 210px;
+    }
+
+    .status {
+      margin-bottom: 18px;
+      padding: 16px;
+      border-radius: 14px;
+      display: none;
+      white-space: pre-line;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .hint {
+      color: #777;
+      font-size: 13px;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .bottom-save {
+      position: sticky;
+      bottom: 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .bottom-save-inner {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 12px;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    @media (max-width: 900px) {
+      .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="top-bar">
+      <h1>📝 수업일지 작성</h1>
+
+      <div class="top-actions">
+        <a class="button-link secondary" href="academy-sessions.html">목록으로</a>
+        <button id="saveBtn">저장하기</button>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <section class="card">
+      <div class="card-title">1️⃣ 수업 기본정보</div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="sessionDate">수업일</label>
+          <input id="sessionDate" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="classSelect">반</label>
+          <select id="classSelect">
+            <option value="">반 선택</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="sessionType">수업 유형</label>
+          <select id="sessionType">
+            <option value="정규">정규</option>
+            <option value="특강">특강</option>
+            <option value="보충">보충</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="titleInput">제목</label>
+          <input id="titleInput" type="text" placeholder="[정규][고1] 화목토 1반 / ..." />
+        </div>
+      </div>
+
+      <div class="field" style="margin-top: 14px;">
+        <label for="noticeInput">공지</label>
+        <textarea id="noticeInput" placeholder="예: 6/6(토) [현충일] 정상 수업&#10;시험 대비 일요일 보충"></textarea>
+      </div>
+
+      <div class="field" style="margin-top: 14px;">
+        <label for="memoInput">메모</label>
+        <textarea id="memoInput" placeholder="선생님 내부 메모"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">2️⃣ 공통숙제</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>대상</th>
+            <th>교재</th>
+            <th>범위</th>
+            <th>문제 수</th>
+            <th>메모</th>
+          </tr>
+        </thead>
+        <tbody id="homeworkBody"></tbody>
+      </table>
+
+      <div class="hint">
+        학교별 숙제처럼 입력하면 돼. 빈 줄은 저장되지 않아.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">3️⃣ 학생별 기록</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>학생</th>
+            <th>출결</th>
+            <th>설문 미응답</th>
+            <th>지각분</th>
+            <th>숙제 미완료</th>
+            <th>숙제 안 가져옴</th>
+            <th>출결체크 안 함</th>
+            <th>풀이노트 없음</th>
+            <th>개별숙제</th>
+            <th>메모</th>
+          </tr>
+        </thead>
+        <tbody id="studentBody">
+          <tr>
+            <td colspan="10">반을 선택하면 학생 목록이 나타납니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="bottom-save">
+      <div class="bottom-save-inner">
+        <button id="saveBtnBottom">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE =
+      location.hostname === "localhost" || location.hostname === "127.0.0.1"
+        ? "https://grading-server-production.up.railway.app"
+        : location.origin;
+
+    const statusEl = document.getElementById("status");
+
+    const sessionDateEl = document.getElementById("sessionDate");
+    const classSelectEl = document.getElementById("classSelect");
+    const sessionTypeEl = document.getElementById("sessionType");
+    const titleInputEl = document.getElementById("titleInput");
+    const noticeInputEl = document.getElementById("noticeInput");
+    const memoInputEl = document.getElementById("memoInput");
+
+    const homeworkBody = document.getElementById("homeworkBody");
+    const studentBody = document.getElementById("studentBody");
+
+    const saveBtn = document.getElementById("saveBtn");
+    const saveBtnBottom = document.getElementById("saveBtnBottom");
+
+    let currentStudents = [];
+    let currentClasses = [];
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showStatus(type, message) {
+      statusEl.className = `status show ${type}`;
+      statusEl.textContent = message;
+    }
+
+    function clearStatus() {
+      statusEl.className = "status";
+      statusEl.textContent = "";
+    }
+
+    function todayText() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function koreanDayName(dateText) {
+      if (!dateText) return "";
+      const dayNames = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+      const d = new Date(`${dateText}T00:00:00`);
+      return dayNames[d.getDay()];
+    }
+
+    function selectedClassName() {
+      const selected = currentClasses.find(cls => String(cls.id) === String(classSelectEl.value));
+      return selected ? selected.name : "";
+    }
+
+    function updateTitleAuto() {
+      const dateText = sessionDateEl.value;
+      const className = selectedClassName();
+      const type = sessionTypeEl.value || "정규";
+      const day = koreanDayName(dateText);
+
+      if (!dateText || !className) return;
+
+      const [yyyy, mm, dd] = dateText.split("-");
+      titleInputEl.value = `[${type}][고1] ${className} / ${yyyy}년 ${Number(mm)}월 ${Number(dd)}일 ${day}`;
+    }
+
+    function renderHomeworkRows() {
+      const defaultTargets = ["일산동고", "덕이고", "안곡고", "중산고", "율곡고", "", ""];
+
+      homeworkBody.innerHTML = defaultTargets
+        .map((target, index) => `
+          <tr class="homework-row">
+            <td>
+              <input class="hw-target" type="text" value="${escapeHtml(target)}" placeholder="예: 일산동고" />
+            </td>
+            <td>
+              <input class="hw-book" type="text" placeholder="예: 시험대비 / 개념원리" />
+            </td>
+            <td>
+              <input class="hw-range" type="text" placeholder="예: 18 ~ 26" />
+            </td>
+            <td>
+              <input class="hw-count small-input" type="number" min="0" placeholder="-" />
+            </td>
+            <td>
+              <input class="hw-memo" type="text" placeholder="메모" />
+            </td>
+          </tr>
+        `)
+        .join("");
+    }
+
+    async function loadClasses() {
+      showStatus("info", "반 목록을 불러오는 중입니다...");
+
+      try {
+        const res = await fetch(`${API_BASE}/academy/classes`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || data.message || "반 목록을 불러오지 못했습니다.");
+        }
+
+        currentClasses = data.classes || [];
+
+        classSelectEl.innerHTML =
+          `<option value="">반 선택</option>` +
+          currentClasses
+            .map(cls => `<option value="${escapeHtml(cls.id)}">${escapeHtml(cls.name)}</option>`)
+            .join("");
+
+        clearStatus();
+      } catch (err) {
+        console.error(err);
+        showStatus("error", err.message);
+      }
+    }
+
+    async function loadStudentsByClass(classId) {
+      if (!classId) {
+        currentStudents = [];
+        studentBody.innerHTML = `
+          <tr>
+            <td colspan="10">반을 선택하면 학생 목록이 나타납니다.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      showStatus("info", "학생 목록을 불러오는 중입니다...");
+
+      try {
+        const res = await fetch(`${API_BASE}/academy/classes/${classId}/students`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || data.message || "학생 목록을 불러오지 못했습니다.");
+        }
+
+        currentStudents = data.students || [];
+        renderStudentRows(currentStudents);
+        updateTitleAuto();
+        clearStatus();
+      } catch (err) {
+        console.error(err);
+        showStatus("error", err.message);
+      }
+    }
+
+    function renderStudentRows(students) {
+      if (!students.length) {
+        studentBody.innerHTML = `
+          <tr>
+            <td colspan="10">학생이 없습니다.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      studentBody.innerHTML = students
+        .map(student => `
+          <tr class="student-row" data-student-id="${escapeHtml(student.id)}">
+            <td class="student-name">${escapeHtml(student.name)}</td>
+
+            <td>
+              <select class="attendance-status">
+                <option value="출석">출석</option>
+                <option value="결석">결석</option>
+                <option value="조퇴">조퇴</option>
+              </select>
+            </td>
+
+            <td class="checkbox-cell">
+              <input class="survey-missing" type="checkbox" />
+            </td>
+
+            <td>
+              <input class="late-minutes small-input" type="number" min="0" value="0" />
+            </td>
+
+            <td class="checkbox-cell">
+              <input class="homework-incomplete" type="checkbox" />
+            </td>
+
+            <td class="checkbox-cell">
+              <input class="homework-not-brought" type="checkbox" />
+            </td>
+
+            <td class="checkbox-cell">
+              <input class="checkin-missing" type="checkbox" />
+            </td>
+
+            <td class="checkbox-cell">
+              <input class="note-missing" type="checkbox" />
+            </td>
+
+            <td>
+              <textarea class="individual-homework homework-input" placeholder="개별숙제"></textarea>
+            </td>
+
+            <td>
+              <textarea class="teacher-memo memo-input" placeholder="메모"></textarea>
+            </td>
+          </tr>
+        `)
+        .join("");
+    }
+
+    function collectCommonHomework() {
+      const rows = Array.from(document.querySelectorAll(".homework-row"));
+
+      return rows
+        .map((row, index) => {
+          const targetName = row.querySelector(".hw-target").value.trim();
+          const bookName = row.querySelector(".hw-book").value.trim();
+          const rangeText = row.querySelector(".hw-range").value.trim();
+          const problemCountRaw = row.querySelector(".hw-count").value;
+          const memo = row.querySelector(".hw-memo").value.trim();
+
+          const hasAnyValue =
+            targetName || bookName || rangeText || problemCountRaw || memo;
+
+          if (!hasAnyValue) return null;
+
+          return {
+            targetType: "학교",
+            targetName,
+            bookName,
+            rangeText,
+            problemCount: problemCountRaw ? Number(problemCountRaw) : null,
+            memo,
+            sortOrder: index + 1,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function collectStudentRecords() {
+      const rows = Array.from(document.querySelectorAll(".student-row"));
+
+      return rows.map(row => {
+        return {
+          studentId: Number(row.dataset.studentId),
+          attendanceStatus: row.querySelector(".attendance-status").value,
+          surveyMissing: row.querySelector(".survey-missing").checked,
+          lateMinutes: Number(row.querySelector(".late-minutes").value || 0),
+          homeworkIncomplete: row.querySelector(".homework-incomplete").checked,
+          homeworkNotBrought: row.querySelector(".homework-not-brought").checked,
+          checkinMissing: row.querySelector(".checkin-missing").checked,
+          noteMissing: row.querySelector(".note-missing").checked,
+          individualHomework: row.querySelector(".individual-homework").value.trim(),
+          teacherMemo: row.querySelector(".teacher-memo").value.trim(),
+        };
+      });
+    }
+
+    async function saveSession() {
+      const classGroupId = Number(classSelectEl.value);
+      const sessionDate = sessionDateEl.value;
+
+      if (!sessionDate) {
+        showStatus("error", "수업일을 선택해주세요.");
+        return;
+      }
+
+      if (!classGroupId) {
+        showStatus("error", "반을 선택해주세요.");
+        return;
+      }
+
+      const payload = {
+        classGroupId,
+        sessionDate,
+        sessionType: sessionTypeEl.value || "정규",
+        title: titleInputEl.value.trim(),
+        notice: noticeInputEl.value.trim(),
+        memo: memoInputEl.value.trim(),
+        commonHomework: collectCommonHomework(),
+        studentRecords: collectStudentRecords(),
+      };
+
+      if (payload.studentRecords.length === 0) {
+        showStatus("error", "학생 기록이 없습니다. 반을 먼저 선택해주세요.");
+        return;
+      }
+
+      const ok = confirm(
+        "수업일지를 저장할까요?\n\n같은 날짜/반/수업유형의 기존 수업일지가 있으면 덮어씁니다."
+      );
+
+      if (!ok) return;
+
+      showStatus("info", "수업일지를 저장하는 중입니다...");
+
+      try {
+        const res = await fetch(`${API_BASE}/academy/sessions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || data.message || "수업일지를 저장하지 못했습니다.");
+        }
+
+        showStatus(
+          "success",
+          `저장 완료!\nsessionId: ${data.sessionId}\n잠시 후 상세 화면으로 이동합니다.`
+        );
+
+        setTimeout(() => {
+          location.href = `academy-session.html?sessionId=${data.sessionId}`;
+        }, 900);
+      } catch (err) {
+        console.error(err);
+        showStatus("error", err.message);
+      }
+    }
+
+    classSelectEl.addEventListener("change", () => {
+      loadStudentsByClass(classSelectEl.value);
+      updateTitleAuto();
+    });
+
+    sessionDateEl.addEventListener("change", updateTitleAuto);
+    sessionTypeEl.addEventListener("change", updateTitleAuto);
+
+    saveBtn.addEventListener("click", saveSession);
+    saveBtnBottom.addEventListener("click", saveSession);
+
+    async function init() {
+      sessionDateEl.value = todayText();
+      renderHomeworkRows();
+      await loadClasses();
+    }
+
+    init();
+  </script>
+</body>
+</html>
