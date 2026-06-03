@@ -401,6 +401,90 @@ app.get("/academy/db-test", async (req, res) => {
     });
   }
 });
+// 수업일지 목록 불러오기
+app.get("/academy/sessions", async (req, res) => {
+  try {
+    const { date, classId } = req.query;
+
+    const conditions = [];
+    const params = [];
+
+    if (date) {
+      conditions.push("cs.session_date = ?");
+      params.push(date);
+    }
+
+    if (classId) {
+      conditions.push("cs.class_group_id = ?");
+      params.push(Number(classId));
+    }
+
+    const whereSql =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    const [rows] = await pool.query(
+      `
+      SELECT
+        cs.id,
+        cs.class_group_id,
+        cg.name AS class_name,
+        cs.session_date,
+        cs.session_type,
+        cs.title,
+        cs.notice,
+        cs.memo,
+        cs.created_at,
+
+        (
+          SELECT COUNT(*)
+          FROM academy_session_common_homework h
+          WHERE h.session_id = cs.id
+        ) AS common_homework_count,
+
+        (
+          SELECT COUNT(*)
+          FROM academy_session_student_records r
+          WHERE r.session_id = cs.id
+        ) AS student_record_count,
+
+        (
+          SELECT COUNT(*)
+          FROM academy_penalty_entries p
+          WHERE p.session_id = cs.id
+            AND p.status = 'active'
+        ) AS penalty_count,
+
+        (
+          SELECT COALESCE(SUM(p.points), 0)
+          FROM academy_penalty_entries p
+          WHERE p.session_id = cs.id
+            AND p.status = 'active'
+        ) AS penalty_total
+
+      FROM academy_class_sessions cs
+      JOIN academy_class_groups cg ON cs.class_group_id = cg.id
+      ${whereSql}
+      ORDER BY cs.session_date DESC, cs.class_group_id ASC, cs.id DESC
+      LIMIT 100
+      `,
+      params
+    );
+
+    res.json({
+      ok: true,
+      sessions: rows,
+    });
+  } catch (err) {
+    console.error("❌ /academy/sessions error:", err);
+
+    res.status(500).json({
+      ok: false,
+      message: "수업일지 목록을 불러오지 못했습니다.",
+      error: err.message,
+    });
+  }
+});
+
 // 수업일지 1개 전체 불러오기
 app.get("/academy/sessions/:sessionId", async (req, res) => {
   try {
@@ -529,10 +613,6 @@ app.get("/academy/sessions/:sessionId", async (req, res) => {
     });
   }
 });
-
-
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
