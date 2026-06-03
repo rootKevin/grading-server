@@ -423,7 +423,7 @@ app.get("/academy/sessions", async (req, res) => {
     const whereSql =
       conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    const [rows] = await pool.query(
+    const [rows] = await db.query(
       `
       SELECT
         cs.id,
