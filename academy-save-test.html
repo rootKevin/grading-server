@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>수업일지 저장 테스트</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 40px;
+      background: #f4f6fb;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    pre {
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>수업일지 저장 테스트</h1>
+  <p>버튼을 누르면 테스트 수업일지가 DB에 저장됩니다.</p>
+
+  <button id="saveBtn">테스트 수업일지 저장</button>
+
+  <pre id="result">대기 중...</pre>
+
+  <script>
+    const API_BASE = location.origin;
+    const resultEl = document.getElementById("result");
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      resultEl.textContent = "저장 중...";
+
+      const payload = {
+        classGroupId: 3,
+        sessionDate: "2026-05-30",
+        sessionType: "정규",
+        title: "[정규][고1] 화목토 1반 / 2026년 5월 30일 토요일",
+        notice: "저장 API 테스트용 수업일지",
+        memo: "academy-save-test.html에서 저장함",
+
+        commonHomework: [
+          {
+            targetType: "학교",
+            targetName: "일산동고",
+            bookName: "시험대비",
+            rangeText: "18 ~ 26",
+            sortOrder: 1
+          },
+          {
+            targetType: "학교",
+            targetName: "덕이고",
+            bookName: "시험대비",
+            rangeText: "18 ~ 26",
+            sortOrder: 2
+          }
+        ],
+
+        studentRecords: [
+          {
+            studentId: 18,
+            attendanceStatus: "출석",
+            surveyMissing: false,
+            lateMinutes: 0,
+            homeworkIncomplete: false,
+            homeworkNotBrought: false,
+            checkinMissing: false,
+            noteMissing: false,
+            individualHomework: "개념원리 테스트 숙제",
+            teacherMemo: ""
+          },
+          {
+            studentId: 24,
+            attendanceStatus: "출석",
+            surveyMissing: true,
+            lateMinutes: 3,
+            homeworkIncomplete: true,
+            homeworkNotBrought: false,
+            checkinMissing: false,
+            noteMissing: false,
+            individualHomework: "",
+            teacherMemo: "테스트 메모"
+          }
+        ]
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/academy/sessions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        resultEl.textContent = JSON.stringify(data, null, 2);
+
+        if (data.ok && data.sessionId) {
+          resultEl.textContent += `\n\n상세보기:\n${API_BASE}/academy-session.html?sessionId=${data.sessionId}`;
+        }
+      } catch (err) {
+        resultEl.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>

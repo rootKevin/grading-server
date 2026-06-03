@@ -615,7 +615,253 @@ app.get("/academy/sessions/:sessionId", async (req, res) => {
   }
 });
 
+// 수업일지 새로 저장하기
+app.post("/academy/sessions", async (req, res) => {
+  const conn = await pool.getConnection();
 
+  try {
+    const {
+      classGroupId,
+      sessionDate,
+      sessionType = "정규",
+      title,
+      notice = "",
+      memo = "",
+      commonHomework = [],
+      studentRecords = [],
+    } = req.body;
+
+    if (!classGroupId || !sessionDate) {
+      return res.status(400).json({
+        ok: false,
+        message: "classGroupId와 sessionDate는 필수입니다.",
+      });
+    }
+
+    await conn.beginTransaction();
+
+    // 1. 같은 날짜/반/유형의 기존 수업일지가 있으면 정리
+    const [oldSessionRows] = await conn.query(
+      `
+      SELECT id
+      FROM academy_class_sessions
+      WHERE class_group_id = ?
+        AND session_date = ?
+        AND session_type = ?
+      LIMIT 1
+      `,
+      [classGroupId, sessionDate, sessionType]
+    );
+
+    if (oldSessionRows.length > 0) {
+      const oldSessionId = oldSessionRows[0].id;
+
+      await conn.query(
+        `DELETE FROM academy_penalty_entries WHERE session_id = ?`,
+        [oldSessionId]
+      );
+
+      await conn.query(
+        `DELETE FROM academy_session_student_records WHERE session_id = ?`,
+        [oldSessionId]
+      );
+
+      await conn.query(
+        `DELETE FROM academy_session_common_homework WHERE session_id = ?`,
+        [oldSessionId]
+      );
+
+      await conn.query(
+        `DELETE FROM academy_class_sessions WHERE id = ?`,
+        [oldSessionId]
+      );
+    }
+
+    // 2. 수업 기본정보 저장
+    const finalTitle =
+      title || `수업일지 / ${sessionDate} / classGroupId ${classGroupId}`;
+
+    const [sessionResult] = await conn.query(
+      `
+      INSERT INTO academy_class_sessions
+      (class_group_id, session_date, session_type, title, notice, memo)
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [classGroupId, sessionDate, sessionType, finalTitle, notice, memo]
+    );
+
+    const sessionId = sessionResult.insertId;
+
+    // 3. 공통숙제 저장
+    for (let i = 0; i < commonHomework.length; i++) {
+      const hw = commonHomework[i];
+
+      await conn.query(
+        `
+        INSERT INTO academy_session_common_homework
+        (
+          session_id,
+          target_type,
+          target_name,
+          book_name,
+          range_text,
+          problem_count,
+          memo,
+          sort_order
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          sessionId,
+          hw.targetType || "전체",
+          hw.targetName || null,
+          hw.bookName || null,
+          hw.rangeText || null,
+          hw.problemCount || null,
+          hw.memo || null,
+          hw.sortOrder || i + 1,
+        ]
+      );
+    }
+
+    // 4. 학생별 기록 저장
+    for (const record of studentRecords) {
+      const lateMinutes = Number(record.lateMinutes || 0);
+      const latePenaltyPoints = Number(record.latePenaltyPoints || lateMinutes * 2);
+
+      await conn.query(
+        `
+        INSERT INTO academy_session_student_records
+        (
+          session_id,
+          student_id,
+          attendance_status,
+          survey_missing,
+          late_minutes,
+          late_penalty_points,
+          homework_incomplete,
+          homework_not_brought,
+          checkin_missing,
+          note_missing,
+          individual_homework,
+          teacher_memo
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          sessionId,
+          record.studentId,
+          record.attendanceStatus || "출석",
+          record.surveyMissing ? 1 : 0,
+          lateMinutes,
+          latePenaltyPoints,
+          record.homeworkIncomplete ? 1 : 0,
+          record.homeworkNotBrought ? 1 : 0,
+          record.checkinMissing ? 1 : 0,
+          record.noteMissing ? 1 : 0,
+          record.individualHomework || null,
+          record.teacherMemo || null,
+        ]
+      );
+
+      // 5. 자동 페널티 생성
+      const penalties = [];
+
+      if (record.surveyMissing) {
+        penalties.push({
+          code: "SURVEY_MISSING",
+          reason: "설문 미응답",
+          points: 5,
+        });
+      }
+
+      if (lateMinutes > 0) {
+        penalties.push({
+          code: "LATE",
+          reason: "지각",
+          points: latePenaltyPoints,
+        });
+      }
+
+      if (record.homeworkIncomplete) {
+        penalties.push({
+          code: "HOMEWORK_INCOMPLETE",
+          reason: "숙제 미완료",
+          points: 30,
+        });
+      }
+
+      if (record.homeworkNotBrought) {
+        penalties.push({
+          code: "HOMEWORK_NOT_BROUGHT",
+          reason: "숙제 가져오지 않음",
+          points: 30,
+        });
+      }
+
+      if (record.checkinMissing) {
+        penalties.push({
+          code: "CHECKIN_MISSING",
+          reason: "출결 체크 안 함",
+          points: 30,
+        });
+      }
+
+      if (record.noteMissing) {
+        penalties.push({
+          code: "NOTE_MISSING",
+          reason: "풀이 노트 없음",
+          points: 5,
+        });
+      }
+
+      for (const penalty of penalties) {
+        await conn.query(
+          `
+          INSERT INTO academy_penalty_entries
+          (
+            session_id,
+            student_id,
+            penalty_code,
+            reason,
+            points,
+            source,
+            status
+          )
+          VALUES (?, ?, ?, ?, ?, 'auto', 'active')
+          `,
+          [
+            sessionId,
+            record.studentId,
+            penalty.code,
+            penalty.reason,
+            penalty.points,
+          ]
+        );
+      }
+    }
+
+    await conn.commit();
+
+    res.json({
+      ok: true,
+      message: "수업일지가 저장되었습니다.",
+      sessionId,
+    });
+  } catch (err) {
+    await conn.rollback();
+
+    console.error("❌ POST /academy/sessions error:", err);
+
+    res.status(500).json({
+      ok: false,
+      message: "수업일지를 저장하지 못했습니다.",
+      error: err.message,
+    });
+  } finally {
+    conn.release();
+  }
+});
 
 
 
