@@ -617,7 +617,7 @@ app.get("/academy/sessions/:sessionId", async (req, res) => {
 
 // 수업일지 새로 저장하기
 app.post("/academy/sessions", async (req, res) => {
-  const conn = await pool.getConnection();
+  const conn = await db.getConnection();
 
   try {
     const {
